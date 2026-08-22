@@ -99,16 +99,15 @@
             70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
+        /* O marcador alvo se anuncia com um pulso de foco, não com um salto
+           elástico. Bounce em ferramenta operacional lê como brinquedo. */
         .marker-highlight {
-            animation: markerBounceHighlight 1.1s cubic-bezier(.34,1.56,.64,1) 2;
-            filter: drop-shadow(0 0 10px rgba(75, 195, 247, .85));
+            animation: markerFocus 1.4s cubic-bezier(.16, 1, .3, 1);
         }
-        @keyframes markerBounceHighlight {
-            0% { transform: translateY(0) scale(1); }
-            30% { transform: translateY(-14px) scale(1.18); }
-            55% { transform: translateY(0) scale(0.96); }
-            75% { transform: translateY(-5px) scale(1.05); }
-            100% { transform: translateY(0) scale(1); }
+        @keyframes markerFocus {
+            0%   { transform: scale(1);    filter: drop-shadow(0 0 0 rgba(75,195,247,0)); }
+            22%  { transform: scale(1.14); filter: drop-shadow(0 3px 12px rgba(75,195,247,.9)); }
+            100% { transform: scale(1);    filter: drop-shadow(0 0 0 rgba(75,195,247,0)); }
         }
         /* Botão de alternância de tema do mapa */
         .map-theme-toggle {
@@ -155,6 +154,58 @@
             --apisul-accent-soft: #D7F5FF;
             --apisul-ivory: #F7FBFF;
             --apisul-muted: #9DB9D6;
+
+            /* ---- Escala de superfícies: um degrau por nível de elevação ---- */
+            --surface-0: #020B1E;
+            --surface-1: #061B38;
+            --surface-2: #0A2749;
+            --surface-3: #103358;
+
+            /* ---- Traços: uma única família, três intensidades ---- */
+            --line-subtle: rgba(125, 178, 224, .13);
+            --line: rgba(125, 178, 224, .22);
+            --line-strong: rgba(125, 178, 224, .34);
+
+            /* ---- Texto: cada nível tem contraste verificado sobre --surface-1 ---- */
+            --text-primary: #F2F7FC;   /* 15.8:1 */
+            --text-secondary: #B9CCE0;  /* 8.9:1 */
+            --text-muted: #8FA8C2;      /* 5.6:1 */
+
+            /* ---- Semântica de status ---- */
+            --danger: #FF6B6B;
+            --danger-dim: rgba(255, 107, 107, .13);
+            --warn: #F5B544;
+            --warn-dim: rgba(245, 181, 68, .13);
+            --ok: #3DD69C;
+            --ok-dim: rgba(61, 214, 156, .13);
+
+            /* ---- Raio: razão consistente, sem valores avulsos ---- */
+            --r-sm: 6px;
+            --r-md: 10px;
+            --r-lg: 14px;
+            --r-xl: 18px;
+            --r-pill: 999px;
+
+            /* ---- Espaço: escala de 4px ---- */
+            --sp-1: 4px;
+            --sp-2: 8px;
+            --sp-3: 12px;
+            --sp-4: 16px;
+            --sp-5: 24px;
+            --sp-6: 32px;
+            --sp-7: 48px;
+
+            /* ---- Elevação: deslocamento + desfoque, nunca halo puro ---- */
+            --elev-1: 0 1px 2px rgba(0,0,0,.28), 0 2px 8px rgba(0,0,0,.18);
+            --elev-2: 0 2px 4px rgba(0,0,0,.30), 0 8px 24px rgba(0,0,0,.24);
+            --elev-3: 0 4px 8px rgba(0,0,0,.32), 0 18px 48px rgba(0,0,0,.32);
+
+            /* ---- Motion ---- */
+            --t-fast: 140ms;
+            --t-base: 240ms;
+            --t-slow: 420ms;
+            --ease-out: cubic-bezier(.16, 1, .3, 1);
+            --ease-inout: cubic-bezier(.4, 0, .2, 1);
         }
 
         html { scroll-behavior: smooth; }
@@ -166,19 +217,9 @@
             color: #DDE5ED;
             letter-spacing: -0.005em;
         }
-        body::before {
-            content: "";
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: -1;
-            opacity: .14;
-            background-image:
-                linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
-            background-size: 48px 48px;
-            mask-image: linear-gradient(to bottom, black, transparent 72%);
-        }
+        /* A grade de fundo saiu: era textura genérica de "produto técnico" sem
+           nada por baixo que a justificasse. O gradiente do body já dá a
+           profundidade; a página respira melhor sem o padrão. */
         h1, h2, h3, h4, h5, h6 { letter-spacing: -0.02em; }
         h2, h3, h4 { font-weight: 600 !important; }
 
@@ -249,17 +290,6 @@
             line-height: 1;
             z-index: -1;
         }
-        .hero-kicker {
-            display: inline-flex;
-            align-items: center;
-            gap: .75rem;
-            color: #FFFFFF;
-            font-size: .68rem;
-            font-weight: 800;
-            letter-spacing: .19em;
-            text-transform: uppercase;
-        }
-        .hero-kicker::before { content: ""; width: 42px; height: 2px; background: #FFFFFF; opacity: .78; }
         .hero-title {
             color: #FFFFFF;
             font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
@@ -296,219 +326,828 @@
         .hero-metric { border-top: 1px solid rgba(255,255,255,.09); }
 
         .accent-button {
-            background: var(--apisul-accent) !important;
-            color: #071321 !important;
-            border: 1px solid var(--apisul-accent) !important;
-            box-shadow: 0 12px 30px rgba(75,195,247,.17) !important;
-        }
-        .accent-button:hover { background: var(--apisul-accent-soft) !important; }
-        .outline-button {
-            background: transparent !important;
-            color: var(--apisul-ivory) !important;
-            border: 1px solid rgba(215,245,255,.38) !important;
-        }
-        .outline-button:hover { border-color: var(--apisul-accent) !important; color: var(--apisul-accent-soft) !important; }
+        /* Superfícies herdadas do Tailwind, alinhadas à escala de tokens.
+           A pilha anterior tinha três camadas disputando estas mesmas classes
+           com !important; agora existe uma definição por classe. */
+        .bg-navy-950 { background-color: var(--surface-0); }
+        .bg-navy-900 { background-color: var(--surface-1); }
+        .bg-navy-850 { background-color: var(--surface-2); }
+        .bg-navy-800 { background-color: var(--surface-3); }
+        .border-navy-800, .border-navy-700 { border-color: var(--line-subtle); }
 
-        main > .grid > div,
-        main > div.bg-navy-900,
-        .print-card {
-            backdrop-filter: blur(8px);
-        }
-        .bg-navy-900 {
-            background-color: rgba(5, 24, 52, .90) !important;
-        }
-        .bg-navy-850 { background-color: rgba(8, 36, 74, .84) !important; }
-        .bg-navy-800 { background-color: rgba(13, 50, 98, .80) !important; }
-        .bg-navy-950 { background-color: rgba(5, 15, 28, .96) !important; }
-        .border-navy-800, .border-navy-700 { border-color: rgba(75,195,247,.16) !important; }
-        .rounded-xl { border-radius: 1rem !important; }
-        .shadow-xl, .shadow-2xl, .shadow-lg { box-shadow: 0 20px 55px rgba(0,0,0,.20) !important; }
+        footer { border-color: var(--line-subtle); }
 
-        main > .grid:first-of-type > div {
-            border-top: 2px solid rgba(75,195,247,.55) !important;
-            min-height: 146px;
-        }
-        main > .grid:first-of-type > div:hover {
-            transform: translateY(-2px);
-            border-color: rgba(215,245,255,.36) !important;
-            transition: .2s ease;
-        }
-
-        .text-sky-300, .text-sky-400, .text-sky-500 { color: var(--apisul-accent-soft) !important; }
-        .bg-sky-500 { background-color: var(--apisul-accent) !important; }
-        .hover\:bg-sky-400:hover { background-color: var(--apisul-accent-soft) !important; }
-        .border-sky-500, .border-sky-800\/50, .border-sky-800\/60 { border-color: rgba(75,195,247,.40) !important; }
-        .ring-sky-400 { --tw-ring-color: rgba(75,195,247,.72) !important; }
-        .shadow-sky-500\/20 { --tw-shadow-color: rgba(75,195,247,.18) !important; }
-
-        table thead { background: rgba(2,11,30,.90) !important; }
-        table th { color: var(--apisul-accent-soft) !important; letter-spacing: .13em; }
-        table tbody tr:hover { background: rgba(75,195,247,.055) !important; }
-        input, select {
-            border-color: rgba(75,195,247,.19) !important;
-            box-shadow: none !important;
-        }
-        input:focus, select:focus { border-color: var(--apisul-accent) !important; }
-        .leaflet-control-zoom a { background: #08244A !important; color: var(--apisul-accent-soft) !important; border-color: rgba(75,195,247,.22) !important; }
-        .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: #08244A !important; border-color: rgba(75,195,247,.30) !important; }
-
-        .section-number {
-            color: var(--apisul-accent);
-            font-family: 'Inter', sans-serif;
-            font-size: .68rem;
-            letter-spacing: .14em;
-            font-weight: 700;
-        }
-        footer { border-color: rgba(75,195,247,.18) !important; }
+        /* Superfícies do navegador: seleção, cursor e barra de rolagem também
+           pertencem ao sistema — deixá-las no padrão do browser é o detalhe que
+           mais denuncia uma página montada em vez de construída. */
+        ::selection { background: rgba(75,195,247,.28); color: var(--text-primary); }
+        html { scrollbar-color: var(--surface-3) var(--surface-0); }
+        input, textarea, select { caret-color: var(--apisul-accent); }
 
         @media (max-width: 1023px) {
             .apisul-hero { min-height: auto; }
             .apisul-hero::after { font-size: 22rem; right: -5%; }
-            #headerActions { padding-top: 1rem; border-top: 1px solid rgba(75,195,247,.16); }
+            #headerActions { padding-top: 1rem; border-top: 1px solid var(--line-subtle); }
         }
         @media (max-width: 640px) {
-            .hero-title { font-size: clamp(2.18rem, 10.5vw, 3.05rem); line-height: 1.08; letter-spacing: -.045em; }
+            .hero-title { font-size: clamp(2.1rem, 9.5vw, 2.9rem); line-height: 1.1; letter-spacing: -.035em; }
             .apisul-hero::before { right: -310px; }
+            .apisul-hero::after { display: none; }
         }
+
+        /* ---- Impressão: o relatório precisa sair legível em papel ---- */
         @media print {
-            .apisul-hero { background: white !important; border: 1px solid #bbb !important; color: black !important; }
-            .hero-title, .hero-copy { color: black !important; }
+            body { background: #fff !important; color: #000 !important; }
+            body::before, .hero-flow-lines, .map-legend { display: none !important; }
+            .apisul-hero {
+                background: #fff !important;
+                border: 1px solid #bbb !important;
+                color: #000 !important;
+                box-shadow: none !important;
+            }
+            .apisul-hero::before, .apisul-hero::after { display: none !important; }
+            .hero-title, .hero-copy, .panel-title, .status-panel__figure { color: #000 !important; }
+            .panel, .status-panel {
+                background: #fff !important;
+                border: 1px solid #ccc !important;
+                box-shadow: none !important;
+                break-inside: avoid;
+            }
+            .data-table tbody td, .data-table thead th { color: #000 !important; background: #fff !important; }
+            .map-frame { break-inside: avoid; }
         }
     </style>
 
 
-    <style id="apisul-modern-refresh">
-        /* ---- Refined icon chips (replaces bare Font Awesome glyphs with a consistent, softer container) ---- */
-        .icon-chip {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            border-radius: .65rem;
-            background: linear-gradient(155deg, rgba(75,195,247,.16), rgba(75,195,247,.05));
-            border: 1px solid rgba(75,195,247,.22);
-            color: var(--apisul-accent-soft);
-        }
-        .icon-chip.sm { width: 30px; height: 30px; font-size: .78rem; }
-        .icon-chip.md { width: 44px; height: 44px; font-size: 1.05rem; }
-        .icon-chip.lg {
-            width: 60px;
-            height: 60px;
-            font-size: 1.5rem;
-            border-radius: 1.1rem;
-            box-shadow: 0 10px 24px -8px rgba(75,195,247,.35), inset 0 1px 0 rgba(255,255,255,.08);
-            transition: transform .35s var(--fluid-ease, cubic-bezier(.22,.61,.36,1)), box-shadow .35s ease;
-        }
-        .stat-card-elegant:hover .icon-chip.lg {
-            transform: scale(1.08) rotate(-3deg);
-        }
-        .icon-chip.tone-red { background: linear-gradient(155deg, rgba(239,68,68,.22), rgba(239,68,68,.06)); border-color: rgba(239,68,68,.32); color: #FCA5A5; }
-        .icon-chip.tone-amber { background: linear-gradient(155deg, rgba(245,158,11,.22), rgba(245,158,11,.06)); border-color: rgba(245,158,11,.32); color: #FCD34D; }
-        .icon-chip.tone-emerald { background: linear-gradient(155deg, rgba(16,185,129,.22), rgba(16,185,129,.06)); border-color: rgba(16,185,129,.32); color: #6EE7B7; }
-        .icon-chip.tone-indigo { background: linear-gradient(155deg, rgba(99,102,241,.22), rgba(99,102,241,.06)); border-color: rgba(99,102,241,.32); color: #A5B4FC; }
-        .icon-chip.lg.tone-red { box-shadow: 0 10px 24px -8px rgba(239,68,68,.45), inset 0 1px 0 rgba(255,255,255,.08); }
-        .icon-chip.lg.tone-amber { box-shadow: 0 10px 24px -8px rgba(245,158,11,.45), inset 0 1px 0 rgba(255,255,255,.08); }
-        .icon-chip.lg.tone-emerald { box-shadow: 0 10px 24px -8px rgba(16,185,129,.45), inset 0 1px 0 rgba(255,255,255,.08); }
+    <style id="apisul-system">
+        /* =====================================================================
+           SISTEMA — componentes construídos sobre os tokens do bloco anterior.
+           Substitui as camadas acumuladas que se sobrescreviam com !important.
+           ===================================================================== */
 
-        /* Cards de estatística: elevação suave e realce na borda ao passar o mouse */
-        .stat-card-elegant {
-            transition: transform .35s cubic-bezier(.22,.61,.36,1), box-shadow .35s ease, border-color .35s ease;
-        }
-        .stat-card-elegant:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px -18px rgba(0,0,0,.55);
-            border-color: rgba(75,195,247,.45);
+        .sr-only {
+            position: absolute;
+            inline-size: 1px; block-size: 1px;
+            padding: 0; margin: -1px;
+            overflow: hidden;
+            clip-path: inset(50%);
+            white-space: nowrap;
         }
 
-        /* ---- Status pills (used by getStatusBadge / legend / filters) ---- */
+        /* ---- Foco visível em tudo que recebe teclado -----------------------
+           Antes só o input mudava a cor da borda: navegar por teclado era
+           literalmente invisível. Um anel único, derivado do accent. */
+        :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+            outline: 2px solid var(--apisul-accent);
+            outline-offset: 2px;
+            border-radius: var(--r-sm);
+        }
+
+        /* ---- Rótulo de campo: uma classe para todos os micro-rótulos ---- */
+        .field-label {
+            display: block;
+            font-size: .6875rem;
+            font-weight: 600;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        /* ---- Painéis --------------------------------------------------- */
+        .panel {
+            background: var(--surface-1);
+            border: 1px solid var(--line-subtle);
+            border-radius: var(--r-lg);
+            padding: var(--sp-5);
+            box-shadow: var(--elev-1);
+        }
+        .panel-head {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: var(--sp-4);
+            padding-block-end: var(--sp-3);
+            margin-block-end: var(--sp-5);
+            border-block-end: 1px solid var(--line-subtle);
+        }
+        .panel-head--split { align-items: flex-end; flex-wrap: wrap; }
+        /* O cabeçalho já define a separação; o resto do painel segue um ritmo
+           vertical único em vez das utilidades space-y-3/4/6 misturadas. */
+        .panel > * + *:not(.panel-head) { margin-block-start: var(--sp-4); }
+        .panel > .panel-head + * { margin-block-start: 0; }
+        .panel-title {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            font-size: 1.0625rem;
+            font-weight: 600;
+            letter-spacing: -.015em;
+            color: var(--text-primary);
+        }
+        .panel-subtitle {
+            margin-block-start: var(--sp-1);
+            font-size: .8125rem;
+            line-height: 1.5;
+            color: var(--text-muted);
+            max-inline-size: 56ch;
+        }
+
+        /* ---- Pílulas de status ---------------------------------------- */
         .status-pill {
             display: inline-flex;
             align-items: center;
-            gap: .45rem;
-            padding: .38rem .75rem;
-            border-radius: 999px;
-            font-size: .68rem;
-            font-weight: 700;
-            letter-spacing: .02em;
+            gap: var(--sp-2);
+            padding: 5px 10px;
+            border-radius: var(--r-pill);
+            font-size: .6875rem;
+            font-weight: 600;
             line-height: 1;
             white-space: nowrap;
+            border: 1px solid transparent;
         }
-        .status-pill .dot { width: 6px; height: 6px; border-radius: 999px; flex-shrink: 0; }
-        .status-pill.pill-red { background: rgba(239,68,68,.12); color: #FCA5A5; border: 1px solid rgba(239,68,68,.32); }
-        .status-pill.pill-red .dot { background: #EF4444; box-shadow: 0 0 0 3px rgba(239,68,68,.18); }
-        .status-pill.pill-amber { background: rgba(245,158,11,.12); color: #FCD34D; border: 1px solid rgba(245,158,11,.32); }
-        .status-pill.pill-amber .dot { background: #F59E0B; box-shadow: 0 0 0 3px rgba(245,158,11,.18); }
-        .status-pill.pill-emerald { background: rgba(16,185,129,.12); color: #6EE7B7; border: 1px solid rgba(16,185,129,.32); }
-        .status-pill.pill-emerald .dot { background: #10B981; box-shadow: 0 0 0 3px rgba(16,185,129,.18); }
+        .status-pill .dot {
+            inline-size: 6px; block-size: 6px;
+            border-radius: var(--r-pill);
+            flex-shrink: 0;
+        }
+        .pill-red     { background: var(--danger-dim); color: var(--danger); border-color: rgba(255,107,107,.28); }
+        .pill-red .dot     { background: var(--danger); }
+        .pill-amber   { background: var(--warn-dim);   color: var(--warn);   border-color: rgba(245,181,68,.28); }
+        .pill-amber .dot   { background: var(--warn); }
+        .pill-emerald { background: var(--ok-dim);     color: var(--ok);     border-color: rgba(61,214,156,.28); }
+        .pill-emerald .dot { background: var(--ok); }
+        .pill-neutral { background: rgba(75,195,247,.10); color: var(--apisul-accent-soft); border-color: rgba(75,195,247,.26); }
 
-        /* ---- Filter toggle group, replaces the old boxy filter buttons ---- */
+        .dot[data-tone="red"]     { background: var(--danger); }
+        .dot[data-tone="amber"]   { background: var(--warn); }
+        .dot[data-tone="emerald"] { background: var(--ok); }
+
+        /* ---- Painel de situação: um número âncora + composição + detalhe --
+           Substitui os quatro cards idênticos, que davam o mesmo peso visual
+           a coisas de importância diferente e não mostravam proporção. */
+        /* A barra de composição atravessa o painel inteiro: ela resume os três
+           números à direita, então pertence à largura toda, não à coluna do "5". */
+        .status-panel {
+            display: grid;
+            grid-template-columns: minmax(180px, 232px) 1fr;
+            gap: var(--sp-4) var(--sp-6);
+            align-items: end;
+            background: var(--surface-1);
+            border: 1px solid var(--line-subtle);
+            border-radius: var(--r-lg);
+            padding: var(--sp-5);
+            box-shadow: var(--elev-1);
+        }
+        .status-panel__figure {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            font-size: clamp(2.75rem, 5vw, 3.75rem);
+            font-weight: 600;
+            line-height: .9;
+            letter-spacing: -.035em;
+            color: var(--text-primary);
+            font-variant-numeric: tabular-nums;
+            margin-block-start: var(--sp-3);
+        }
+        .composition-bar {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 2px;
+            block-size: 5px;
+            margin-block-start: var(--sp-2);
+            border-radius: var(--r-pill);
+            overflow: hidden;
+            background: var(--surface-3);
+        }
+        .composition-bar__seg {
+            inline-size: 0;
+            transition: inline-size var(--t-slow) var(--ease-out);
+        }
+        .composition-bar__seg[data-seg="TOTAL"]    { background: var(--danger); }
+        .composition-bar__seg[data-seg="PARCIAL"]  { background: var(--warn); }
+        .composition-bar__seg[data-seg="LIBERADO"] { background: var(--ok); }
+
+        .status-panel__breakdown {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--sp-5);
+        }
+        .status-metric {
+            padding-inline-start: var(--sp-4);
+            border-inline-start: 1px solid var(--line-subtle);
+        }
+        .status-metric__label {
+            font-size: .6875rem;
+            font-weight: 600;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+        .status-metric__value {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            font-size: 2.25rem;
+            font-weight: 600;
+            line-height: 1.05;
+            letter-spacing: -.03em;
+            font-variant-numeric: tabular-nums;
+            margin-block-start: var(--sp-1);
+        }
+        .status-metric[data-tone="red"]     .status-metric__value { color: var(--danger); }
+        .status-metric[data-tone="amber"]   .status-metric__value { color: var(--warn); }
+        .status-metric[data-tone="emerald"] .status-metric__value { color: var(--ok); }
+        .status-metric__share {
+            font-size: .75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-variant-numeric: tabular-nums;
+            margin-block-start: var(--sp-1);
+        }
+        .status-metric__note {
+            font-size: .75rem;
+            color: var(--text-muted);
+            margin-block-start: 2px;
+        }
+
+        /* ---- Grupo de filtros ------------------------------------------ */
         .filter-group {
             display: inline-flex;
             align-items: center;
-            gap: .25rem;
-            padding: .28rem;
-            background: rgba(5,15,28,.65);
-            border: 1px solid rgba(75,195,247,.16);
-            border-radius: .85rem;
+            gap: 2px;
+            padding: 3px;
+            background: var(--surface-0);
+            border: 1px solid var(--line-subtle);
+            border-radius: var(--r-md);
         }
         .filter-pill {
             display: inline-flex;
             align-items: center;
-            gap: .4rem;
-            padding: .48rem .85rem;
-            border-radius: .6rem;
-            font-size: .68rem;
-            font-weight: 700;
-            letter-spacing: .03em;
-            color: #9DB9D6;
+            gap: var(--sp-2);
+            padding: 7px 12px;
+            border-radius: var(--r-sm);
+            font-size: .75rem;
+            font-weight: 600;
+            color: var(--text-muted);
             background: transparent;
-            border: 1px solid transparent;
-            transition: color .25s ease, background-color .25s ease, border-color .25s ease;
+            border: none;
+            white-space: nowrap;
+            transition: color var(--t-fast) var(--ease-inout),
+                        background-color var(--t-fast) var(--ease-inout);
         }
-        .filter-pill:hover { color: #E2E8F0; }
+        .filter-pill:hover { color: var(--text-primary); background: var(--surface-2); }
         .filter-pill.is-active {
-            background: rgba(75,195,247,.14);
-            border-color: rgba(75,195,247,.4);
-            color: var(--apisul-accent-soft);
-            box-shadow: 0 4px 16px rgba(75,195,247,.12);
+            background: var(--surface-3);
+            color: var(--text-primary);
         }
-        .filter-pill .dot { width: 6px; height: 6px; border-radius: 999px; }
 
-        /* ---- Unified input styling ---- */
+        /* ---- Resumo do filtro: diz o que está filtrado e o impacto ------ */
+        .filter-summary {
+            display: flex;
+            align-items: center;
+            gap: var(--sp-3);
+            flex-wrap: wrap;
+            padding: var(--sp-3) var(--sp-4);
+            margin-block-end: var(--sp-4);
+            background: var(--surface-2);
+            border: 1px solid var(--line-subtle);
+            border-radius: var(--r-md);
+            font-size: .8125rem;
+        }
+        .filter-summary[hidden] { display: none; }
+        .filter-summary__count {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-variant-numeric: tabular-nums;
+        }
+        .filter-summary__desc { color: var(--text-muted); }
+        .filter-summary__clear {
+            margin-inline-start: auto;
+            padding: 4px 10px;
+            border: 1px solid var(--line);
+            border-radius: var(--r-sm);
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: .75rem;
+            font-weight: 600;
+            transition: color var(--t-fast) var(--ease-inout),
+                        border-color var(--t-fast) var(--ease-inout);
+        }
+        .filter-summary__clear:hover {
+            color: var(--text-primary);
+            border-color: var(--line-strong);
+        }
+
+        /* ---- Campos ---------------------------------------------------- */
         .apisul-input {
-            background: rgba(5,24,52,.7);
-            border: 1px solid rgba(75,195,247,.18);
-            color: #F1F5F9;
-            border-radius: .65rem;
-            transition: border-color .2s ease, box-shadow .2s ease;
+            background: var(--surface-0);
+            border: 1px solid var(--line);
+            color: var(--text-primary);
+            border-radius: var(--r-md);
+            padding: 9px 12px;
+            font-size: .8125rem;
+            transition: border-color var(--t-fast) var(--ease-inout);
         }
-        .apisul-input:focus {
-            outline: none;
-            border-color: var(--apisul-accent);
-            box-shadow: 0 0 0 3px rgba(75,195,247,.14);
-        }
+        .apisul-input::placeholder { color: var(--text-muted); }
+        .apisul-input:focus-visible { border-color: var(--apisul-accent); }
 
-        /* ---- Table refinements ---- */
-        #registros table thead th { font-size: .64rem; letter-spacing: .1em; padding-top: 1rem; padding-bottom: 1rem; }
-        #registros table tbody tr { transition: background-color .2s ease; }
-        #registros .row-icon-btn {
-            width: 30px; height: 30px;
-            display: inline-flex; align-items: center; justify-content: center;
-            border-radius: .5rem;
-            transition: background-color .2s ease, transform .2s ease;
+        .table-controls {
+            display: flex;
+            align-items: center;
+            gap: var(--sp-3);
+            flex-wrap: wrap;
         }
-        #registros .row-icon-btn:hover { transform: translateY(-1px); }
+        .search-field { position: relative; }
+        .search-field__icon {
+            position: absolute;
+            inset-inline-start: 11px;
+            inset-block-start: 50%;
+            translate: 0 -50%;
+            color: var(--text-muted);
+            font-size: .75rem;
+            pointer-events: none;
+        }
+        .search-field__input {
+            inline-size: min(280px, 100%);
+            padding-inline-start: 32px;
+        }
+        .search-field__input::-webkit-search-cancel-button { filter: invert(.7); }
 
-        /* ---- Section heading treatment ---- */
-        .section-kicker {
+        /* ---- Botões ----------------------------------------------------- */
+        .accent-button, .outline-button {
             display: inline-flex;
             align-items: center;
-            gap: .55rem;
+            justify-content: center;
+            gap: var(--sp-2);
+            padding: 10px 18px;
+            border-radius: var(--r-md);
+            font-size: .8125rem;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: background-color var(--t-fast) var(--ease-inout),
+                        border-color var(--t-fast) var(--ease-inout),
+                        color var(--t-fast) var(--ease-inout);
         }
-        .section-kicker h2 { font-size: 1.05rem; font-weight: 700; letter-spacing: -.01em; }
+        .accent-button {
+            background: var(--apisul-accent);
+            color: #04121F;
+            border: 1px solid var(--apisul-accent);
+        }
+        .accent-button:hover { background: #6FD2FA; border-color: #6FD2FA; }
+        .outline-button {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--line);
+        }
+        .outline-button:hover {
+            color: var(--text-primary);
+            border-color: var(--line-strong);
+            background: var(--surface-2);
+        }
 
-        /* ---- Softer, more premium card corners & borders app-wide ---- */
-        main .bg-navy-900 { border-radius: 1.1rem !important; }
+        /* ---- Chip de sincronização: o estado tem significado visual ----- */
+        .sync-chip {
+            display: flex;
+            align-items: center;
+            gap: var(--sp-2);
+            inline-size: 100%;
+            padding: 8px 12px;
+            border-radius: var(--r-md);
+            font-size: .75rem;
+            font-weight: 600;
+            border: 1px solid var(--line-subtle);
+            background: var(--surface-2);
+            color: var(--text-secondary);
+        }
+        .sync-chip__dot {
+            inline-size: 6px; block-size: 6px;
+            border-radius: var(--r-pill);
+            flex-shrink: 0;
+            background: var(--text-muted);
+        }
+        .sync-chip[data-state="ok"]      { color: var(--ok);   border-color: rgba(61,214,156,.26); }
+        .sync-chip[data-state="ok"]      .sync-chip__dot { background: var(--ok); }
+        .sync-chip[data-state="warn"]    { color: var(--warn); border-color: rgba(245,181,68,.26); }
+        .sync-chip[data-state="warn"]    .sync-chip__dot { background: var(--warn); }
+
+        /* ---- Mapa integrado ao sistema --------------------------------- */
+        .map-frame {
+            position: relative;
+            inline-size: 100%;
+            block-size: clamp(360px, 52vh, 520px);
+            border-radius: var(--r-md);
+            overflow: hidden;
+            border: 1px solid var(--line-subtle);
+        }
+        #map { inline-size: 100%; block-size: 100%; background: var(--surface-0); }
+
+        .map-legend {
+            position: absolute;
+            inset-block-end: var(--sp-4);
+            inset-inline-start: var(--sp-4);
+            z-index: 400;
+            display: flex;
+            flex-direction: column;
+            gap: var(--sp-2);
+            padding: var(--sp-3) var(--sp-4);
+            background: rgba(6, 27, 56, .92);
+            border: 1px solid var(--line-subtle);
+            border-radius: var(--r-md);
+            box-shadow: var(--elev-2);
+            font-size: .75rem;
+            color: var(--text-secondary);
+        }
+        .map-legend__item { display: flex; align-items: center; gap: var(--sp-2); }
+        .map-legend .dot {
+            inline-size: 8px; block-size: 8px;
+            border-radius: var(--r-pill);
+            flex-shrink: 0;
+        }
+
+        .map-empty {
+            position: absolute;
+            inset: 0;
+            z-index: 420;
+            display: grid;
+            place-content: center;
+            justify-items: center;
+            gap: var(--sp-3);
+            background: rgba(2, 11, 30, .82);
+            text-align: center;
+        }
+        .map-empty[hidden] { display: none; }
+        .map-empty__title { font-size: .9375rem; font-weight: 600; color: var(--text-primary); }
+        .map-empty__action {
+            padding: 8px 16px;
+            border: 1px solid var(--line);
+            border-radius: var(--r-md);
+            color: var(--text-secondary);
+            font-size: .8125rem;
+            font-weight: 600;
+        }
+        .map-empty__action:hover { color: var(--text-primary); border-color: var(--line-strong); }
+
+        /* Popup do Leaflet vestido com o sistema, não como componente externo */
+        .leaflet-popup-content-wrapper {
+            background: var(--surface-2) !important;
+            border: 1px solid var(--line) !important;
+            border-radius: var(--r-md) !important;
+            box-shadow: var(--elev-3) !important;
+            color: var(--text-primary) !important;
+        }
+        .leaflet-popup-tip { background: var(--surface-2) !important; border: 1px solid var(--line) !important; }
+        .leaflet-popup-content { margin: var(--sp-4) !important; min-inline-size: 200px; }
+        .leaflet-popup-close-button { color: var(--text-muted) !important; }
+        .map-popup__head {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: var(--sp-3);
+            padding-block-end: var(--sp-2);
+            border-block-end: 1px solid var(--line-subtle);
+        }
+        .map-popup__id { font-weight: 600; color: var(--apisul-accent-soft); font-size: .8125rem; }
+        .map-popup__time { font-size: .6875rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+        .map-popup__title { font-size: .9375rem; font-weight: 600; margin-block-start: var(--sp-3); color: var(--text-primary); }
+        .map-popup__local { font-size: .8125rem; color: var(--text-secondary); margin-block-start: var(--sp-1); line-height: 1.5; }
+        .map-popup__status { margin-block-start: var(--sp-3); }
+        .map-popup__link {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--sp-2);
+            margin-block-start: var(--sp-3);
+            font-size: .75rem;
+            font-weight: 600;
+            color: var(--apisul-accent);
+            text-underline-offset: 3px;
+        }
+        .map-popup__link:hover { text-decoration: underline; }
+        .leaflet-control-zoom a {
+            background: var(--surface-2) !important;
+            color: var(--text-secondary) !important;
+            border-color: var(--line-subtle) !important;
+        }
+        .leaflet-control-zoom a:hover { background: var(--surface-3) !important; color: var(--text-primary) !important; }
+        .leaflet-control-attribution {
+            background: rgba(2,11,30,.75) !important;
+            color: var(--text-muted) !important;
+        }
+        .leaflet-control-attribution a { color: var(--text-secondary) !important; }
+
+        /* ---- Tabela ----------------------------------------------------- */
+        .table-scroll {
+            overflow-x: auto;
+            border: 1px solid var(--line-subtle);
+            border-radius: var(--r-md);
+        }
+        .data-table {
+            inline-size: 100%;
+            border-collapse: collapse;
+            font-size: .8125rem;
+        }
+        .data-table thead th {
+            position: sticky;
+            inset-block-start: 0;
+            z-index: 2;
+            padding: var(--sp-3) var(--sp-4);
+            background: var(--surface-0);
+            border-block-end: 1px solid var(--line);
+            text-align: start;
+            font-size: .6875rem;
+            font-weight: 600;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+        .data-table tbody td {
+            padding: var(--sp-3) var(--sp-4);
+            border-block-end: 1px solid var(--line-subtle);
+            color: var(--text-secondary);
+            vertical-align: middle;
+        }
+        .data-table tbody tr:last-child td { border-block-end: none; }
+        .data-table tbody tr { transition: background-color var(--t-fast) var(--ease-inout); }
+        .data-table tbody tr:hover { background: var(--surface-2); }
+
+        .cell-id__code { display: block; font-weight: 600; color: var(--text-primary); }
+        .cell-id__time { display: block; font-size: .6875rem; color: var(--text-muted); font-variant-numeric: tabular-nums; margin-block-start: 2px; }
+        .cell-place__uf { font-weight: 600; color: var(--text-primary); }
+        .cell-place__city { color: var(--text-secondary); }
+        .cell-place__uf::after { content: " · "; color: var(--text-muted); }
+        .cell-local { color: var(--text-secondary); max-inline-size: 32ch; }
+        /* Observações quebra linha em vez de truncar: a exigência é que nada
+           fique oculto, então a célula cresce em altura, não em reticências. */
+        .cell-obs { color: var(--text-secondary); max-inline-size: 28ch; white-space: normal; line-height: 1.5; }
+        .cell-coords {
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: .75rem;
+            font-variant-numeric: tabular-nums;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+        .cell-source__empty { color: var(--text-muted); }
+        .source-link {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--sp-2);
+            color: var(--apisul-accent);
+            font-weight: 600;
+            text-underline-offset: 3px;
+        }
+        .source-link:hover { text-decoration: underline; }
+        .cell-actions { text-align: end; }
+        .row-actions { display: inline-flex; gap: var(--sp-1); }
+        .row-icon-btn {
+            inline-size: 30px; block-size: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--r-sm);
+            font-size: .75rem;
+            color: var(--text-muted);
+            transition: color var(--t-fast) var(--ease-inout),
+                        background-color var(--t-fast) var(--ease-inout);
+        }
+        .row-icon-btn:hover { background: var(--surface-3); }
+        .row-icon-btn.tone-sky:hover   { color: var(--apisul-accent); }
+        .row-icon-btn.tone-amber:hover { color: var(--warn); }
+        .row-icon-btn.tone-red:hover   { color: var(--danger); }
+
+        /* ---- Estados vazios da tabela ---------------------------------- */
+        .table-empty {
+            display: grid;
+            justify-items: center;
+            gap: var(--sp-2);
+            padding: var(--sp-7) var(--sp-4);
+            text-align: center;
+        }
+        .table-empty__icon { font-size: 1.25rem; color: var(--text-muted); }
+        .table-empty__icon.is-ok { color: var(--ok); }
+        .table-empty__title { font-size: .875rem; font-weight: 600; color: var(--text-secondary); }
+        .table-empty__hint { font-size: .8125rem; color: var(--text-muted); }
+        .table-empty__action {
+            margin-block-start: var(--sp-2);
+            padding: 7px 14px;
+            border: 1px solid var(--line);
+            border-radius: var(--r-md);
+            color: var(--text-secondary);
+            font-size: .8125rem;
+            font-weight: 600;
+        }
+        .table-empty__action:hover { color: var(--text-primary); border-color: var(--line-strong); }
+        .table-empty__spinner {
+            inline-size: 18px; block-size: 18px;
+            border: 2px solid var(--line);
+            border-block-start-color: var(--apisul-accent);
+            border-radius: var(--r-pill);
+            animation: spin .7s linear infinite;
+        }
+        @keyframes spin { to { rotate: 360deg; } }
+
+        /* ---- Medidor de risco ------------------------------------------ */
+        .risk-readout {
+            display: flex;
+            align-items: center;
+            gap: var(--sp-5);
+            flex-wrap: wrap;
+            padding: var(--sp-4);
+            background: var(--surface-2);
+            border: 1px solid var(--line-subtle);
+            border-radius: var(--r-md);
+            margin-block-end: var(--sp-5);
+        }
+        .risk-gauge { inline-size: 132px; text-align: center; flex-shrink: 0; }
+        .risk-gauge svg { inline-size: 100%; block-size: auto; }
+        .risk-gauge__needle {
+            transform-origin: 50px 50px;
+            transition: transform var(--t-slow) var(--ease-out);
+        }
+        .risk-gauge__level {
+            display: block;
+            margin-block-start: var(--sp-2);
+            font-size: .75rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .risk-readout__body { flex: 1; min-inline-size: 200px; }
+        .risk-readout__desc {
+            margin-block-start: var(--sp-2);
+            font-size: .875rem;
+            line-height: 1.55;
+            color: var(--text-secondary);
+        }
+        .risk-readout__basis {
+            margin-block-start: var(--sp-2);
+            font-size: .75rem;
+            color: var(--text-muted);
+            font-variant-numeric: tabular-nums;
+        }
+        .risk-factors { display: grid; gap: var(--sp-3); }
+        .risk-factor {
+            display: flex;
+            gap: var(--sp-3);
+            font-size: .8125rem;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }
+        .risk-factor::before {
+            content: "";
+            inline-size: 3px;
+            border-radius: var(--r-pill);
+            background: var(--line);
+            flex-shrink: 0;
+        }
+
+        /* ---- Contexto --------------------------------------------------- */
+        .context-lead {
+            font-size: .9375rem;
+            line-height: 1.65;
+            color: var(--text-secondary);
+        }
+        .context-lead strong { color: var(--text-primary); font-weight: 600; }
+        .context-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: var(--sp-5);
+            margin-block-start: var(--sp-5);
+            padding-block-start: var(--sp-5);
+            border-block-start: 1px solid var(--line-subtle);
+        }
+        .context-item p { font-size: .8125rem; line-height: 1.6; color: var(--text-muted); }
+        .context-item__title {
+            font-size: .875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-block-end: var(--sp-2);
+        }
+
+        /* ---- Cenários: hierarquia por tom de borda, sem card aninhado --- */
+        .scenario-list { display: grid; gap: var(--sp-4); list-style: none; }
+        .scenario {
+            padding-inline-start: var(--sp-4);
+            border-inline-start: 2px solid var(--line);
+        }
+        .scenario[data-tone="red"]     { border-inline-start-color: var(--danger); }
+        .scenario[data-tone="amber"]   { border-inline-start-color: var(--warn); }
+        .scenario[data-tone="emerald"] { border-inline-start-color: var(--ok); }
+        .scenario__head {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: var(--sp-3);
+            flex-wrap: wrap;
+        }
+        .scenario__title { font-size: .875rem; font-weight: 600; color: var(--text-primary); }
+        .scenario__odds {
+            font-size: .6875rem;
+            font-weight: 600;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+        .scenario__body {
+            margin-block-start: var(--sp-2);
+            font-size: .8125rem;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        /* ---- Recomendações ---------------------------------------------- */
+        .recommendations {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: var(--sp-5);
+            list-style: none;
+        }
+        .recommendation p { font-size: .8125rem; line-height: 1.6; color: var(--text-muted); }
+        .recommendation__title {
+            font-size: .875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-block-end: var(--sp-2);
+        }
+
+        .panel-foot {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--sp-4);
+            flex-wrap: wrap;
+            margin-block-start: var(--sp-5);
+            padding-block-start: var(--sp-4);
+            border-block-start: 1px solid var(--line-subtle);
+            font-size: .75rem;
+            color: var(--text-muted);
+        }
+
+        /* =====================================================================
+           RESPONSIVO — o mobile é projetado, não apenas encolhido.
+           ===================================================================== */
+        @media (max-width: 1100px) {
+            .status-panel { grid-template-columns: 1fr; gap: var(--sp-5); }
+            .status-panel__breakdown { gap: var(--sp-4); }
+        }
+
+        @media (max-width: 720px) {
+            .status-panel__breakdown { grid-template-columns: 1fr; }
+            .status-metric {
+                display: grid;
+                grid-template-columns: 1fr auto;
+                align-items: baseline;
+                gap: var(--sp-2) var(--sp-4);
+                padding-inline-start: 0;
+                padding-block: var(--sp-3);
+                border-inline-start: none;
+                border-block-end: 1px solid var(--line-subtle);
+            }
+            .status-metric:last-child { border-block-end: none; }
+            .status-metric__value { grid-column: 2; grid-row: 1 / span 2; font-size: 1.75rem; }
+            .status-metric__share { grid-column: 1; }
+            .status-metric__note { display: none; }
+
+            /* A tabela vira lista de registros. Sete colunas em scroll horizontal
+               era leitura às cegas; aqui cada linha é um cartão de registro com
+               os rótulos visíveis, mantendo a semântica de tabela. */
+            .table-scroll { border: none; overflow: visible; }
+            .data-table thead { display: none; }
+            .data-table, .data-table tbody, .data-table tr, .data-table td { display: block; }
+            .data-table tr {
+                background: var(--surface-1);
+                border: 1px solid var(--line-subtle);
+                border-radius: var(--r-md);
+                padding: var(--sp-3) var(--sp-4);
+                margin-block-end: var(--sp-3);
+            }
+            .data-table tbody td {
+                display: grid;
+                grid-template-columns: 96px 1fr;
+                align-items: baseline;
+                gap: var(--sp-3);
+                padding: var(--sp-2) 0;
+                border-block-end: none;
+            }
+            .data-table tbody td::before {
+                content: attr(data-label);
+                font-size: .6875rem;
+                font-weight: 600;
+                letter-spacing: .06em;
+                text-transform: uppercase;
+                color: var(--text-muted);
+            }
+            .data-table tbody td.cell-id { border-block-end: 1px solid var(--line-subtle); padding-block-end: var(--sp-3); }
+            .cell-local, .cell-obs { max-inline-size: none; }
+            .cell-actions { text-align: start; }
+
+            .panel-head { flex-direction: column; align-items: flex-start; gap: var(--sp-3); }
+            .table-controls { inline-size: 100%; }
+            .search-field { flex: 1; }
+            .search-field__input { inline-size: 100%; }
+            .filter-group { inline-size: 100%; overflow-x: auto; }
+            .filter-pill { flex: 1; justify-content: center; }
+            .map-legend { display: none; }
+            .risk-readout { gap: var(--sp-4); }
+        }
+
+        /* Alvos de toque confortáveis onde não há ponteiro fino */
+        @media (pointer: coarse) {
+            .row-icon-btn { inline-size: 40px; block-size: 40px; }
+            .filter-pill { padding-block: 10px; }
+        }
     </style>
 
     <style id="apisul-fluid-motion">
@@ -522,16 +1161,18 @@
             --scroll-progress: 0%;
             transition: background-color .45s ease, box-shadow .45s ease, border-color .45s ease;
         }
+        /* Progresso por scaleX em vez de width: transform é composto na GPU,
+           enquanto animar width dispara layout a cada quadro da rolagem. */
         .apisul-header::after {
             content: "";
             position: absolute;
             left: 0;
             bottom: -1px;
-            width: var(--scroll-progress);
+            width: 100%;
             height: 1px;
-            background: linear-gradient(90deg, transparent, var(--apisul-accent-soft), var(--apisul-accent));
-            box-shadow: 0 0 16px rgba(215, 245, 255, .45);
-            transition: width .08s linear;
+            transform: scaleX(var(--scroll-progress, 0));
+            transform-origin: left center;
+            background: linear-gradient(90deg, var(--apisul-accent-soft), var(--apisul-accent));
         }
         .apisul-header.header-scrolled {
             background: rgba(2, 11, 30, .975) !important;
@@ -570,23 +1211,28 @@
             position: relative;
             z-index: 3;
         }
+        /* O parallax do ponteiro permanece; as animações em loop foram removidas.
+           orbitBreath animava border-radius e monogramFloat animava margin-bottom
+           — esta última disparava layout a cada quadro, em loop de 9s, para sempre.
+           Nenhuma das duas era perceptível; ambas custavam quadros continuamente. */
         .apisul-hero::before {
-            transform: translate3d(var(--hero-orbit-x), var(--hero-orbit-y), 0) rotate(0deg);
-            animation: orbitBreath 12s ease-in-out infinite;
+            transform: translate3d(var(--hero-orbit-x), var(--hero-orbit-y), 0);
             transition: transform .9s var(--fluid-ease);
         }
         .apisul-hero::after {
             transform: translate3d(var(--hero-monogram-x), var(--hero-monogram-y), 0);
-            animation: monogramFloat 9s ease-in-out infinite;
             transition: transform 1.1s var(--fluid-ease);
         }
+
+        /* As linhas de fluxo agora fazem uma única passagem na entrada, em vez de
+           três loops infinitos e dessincronizados. Um gesto autoral, não um ruído
+           permanente atrás do texto. */
         .hero-flow-lines {
             position: absolute;
             inset: 0;
             z-index: 1;
             pointer-events: none;
             overflow: hidden;
-            opacity: .78;
             mask-image: linear-gradient(90deg, transparent 2%, black 25%, black 75%, transparent 98%);
         }
         .hero-flow-lines span {
@@ -594,130 +1240,65 @@
             left: -22%;
             width: 144%;
             height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(215,245,255,.06) 25%, rgba(215,245,255,.38) 50%, rgba(215,245,255,.06) 75%, transparent);
-            transform: rotate(-7deg) translate3d(-16%, 0, 0);
-            will-change: transform, opacity;
-        }
-        .hero-flow-lines span:nth-child(1) { top: 23%; animation: flowLine 13s ease-in-out infinite; }
-        .hero-flow-lines span:nth-child(2) { top: 52%; animation: flowLine 16s ease-in-out infinite reverse; opacity: .58; }
-        .hero-flow-lines span:nth-child(3) { top: 78%; animation: flowLine 18s ease-in-out infinite 1.4s; opacity: .42; }
-
-        @keyframes orbitBreath {
-            0%, 100% { border-radius: 50%; }
-            50% { border-radius: 47%; }
-        }
-        @keyframes monogramFloat {
-            0%, 100% { margin-bottom: 0; }
-            50% { margin-bottom: 12px; }
-        }
-        @keyframes flowLine {
-            0%, 100% { transform: rotate(-7deg) translate3d(-13%, 0, 0); opacity: .18; }
-            45% { opacity: .8; }
-            50% { transform: rotate(-7deg) translate3d(13%, -8px, 0); opacity: .68; }
-        }
-
-        /* Entrada tipográfica por caracteres, preservando a leitura sem JavaScript */
-        .word-mask {
-            display: inline-block;
-            white-space: nowrap;
-        }
-        .char-mask {
-            display: inline-block;
-            overflow: hidden;
-            vertical-align: -.075em;
-            padding: .04em .01em .12em;
-            margin-bottom: -.12em;
-        }
-        .char-rise {
-            display: inline-block;
-            will-change: transform, opacity, filter;
-        }
-        html.motion-enabled .hero-title.is-split .char-rise {
+            background: linear-gradient(90deg, transparent, rgba(215,245,255,.06) 25%, rgba(215,245,255,.34) 50%, rgba(215,245,255,.06) 75%, transparent);
+            transform: rotate(-7deg) translate3d(-40%, 0, 0);
             opacity: 0;
-            filter: blur(7px);
-            transform: translate3d(0, 118%, 0) rotate(5deg);
         }
-        html.motion-enabled.page-ready .hero-title.is-split .char-rise {
-            animation: characterRise .92s var(--fluid-ease) forwards;
-            animation-delay: calc(.18s + (var(--char-index) * 17ms));
+        html.motion-enabled.page-ready .hero-flow-lines span {
+            animation: flowLineSweep 1.9s var(--fluid-ease) forwards;
         }
-        .hero-title .char-rise,
-        .hero-title em .char-rise {
-            color: #FFFFFF;
-            background: none;
-            -webkit-background-clip: border-box;
-            background-clip: border-box;
-            text-shadow: 0 8px 28px rgba(0,0,0,.16);
-        }
-        html.motion-enabled.page-ready .hero-title em .char-rise {
-            animation-name: characterRise !important;
-            animation-duration: .92s !important;
-            animation-delay: calc(.18s + (var(--char-index) * 17ms)) !important;
-            animation-timing-function: var(--fluid-ease) !important;
-            animation-fill-mode: forwards !important;
-            animation-iteration-count: 1 !important;
-        }
-        @keyframes characterRise {
-            0% { opacity: 0; filter: blur(7px); transform: translate3d(0, 118%, 0) rotate(5deg); }
-            62% { opacity: 1; filter: blur(0); }
-            100% { opacity: 1; filter: blur(0); transform: translate3d(0, 0, 0) rotate(0); }
-        }
-        @keyframes blueTextSweep {
-            0%, 20%, 100% { background-position: 100% 50%; }
-            55% { background-position: 0% 50%; }
+        .hero-flow-lines span:nth-child(1) { top: 26%; animation-delay: .30s; }
+        .hero-flow-lines span:nth-child(2) { top: 54%; animation-delay: .44s; }
+        .hero-flow-lines span:nth-child(3) { top: 79%; animation-delay: .58s; }
+
+        @keyframes flowLineSweep {
+            0%   { transform: rotate(-7deg) translate3d(-40%, 0, 0); opacity: 0; }
+            35%  { opacity: .75; }
+            100% { transform: rotate(-7deg) translate3d(0, 0, 0); opacity: .34; }
         }
 
-        html.motion-enabled .hero-kicker,
+        /* A entrada do hero é um gesto só: título, texto e ações sobem juntos,
+           em escada curta. A animação por caractere (≈45 spans com atraso
+           escalonado) era efeito de portfólio num painel operacional — atrasava
+           a leitura do dado mais importante da página e criava trabalho de
+           layout proporcional ao número de letras. */
+        html.motion-enabled .hero-title,
         html.motion-enabled .hero-copy,
         html.motion-enabled .hero-actions,
         html.motion-enabled .hero-side-card {
             opacity: 0;
-            transform: translate3d(0, 24px, 0);
-            filter: blur(5px);
+            transform: translate3d(0, 16px, 0);
         }
-        html.motion-enabled.page-ready .hero-kicker { animation: softReveal .82s var(--fluid-ease) .08s forwards; }
-        html.motion-enabled.page-ready .hero-copy { animation: softReveal .9s var(--fluid-ease) .68s forwards; }
-        html.motion-enabled.page-ready .hero-actions { animation: softReveal .9s var(--fluid-ease) .82s forwards; }
-        html.motion-enabled.page-ready .hero-side-card { animation: sideCardReveal 1.05s var(--fluid-ease) .42s forwards; }
+        html.motion-enabled.page-ready .hero-title     { animation: softReveal .7s var(--fluid-ease) .05s forwards; }
+        html.motion-enabled.page-ready .hero-copy      { animation: softReveal .7s var(--fluid-ease) .13s forwards; }
+        html.motion-enabled.page-ready .hero-actions   { animation: softReveal .7s var(--fluid-ease) .21s forwards; }
+        html.motion-enabled.page-ready .hero-side-card { animation: softReveal .8s var(--fluid-ease) .17s forwards; }
         @keyframes softReveal {
-            to { opacity: 1; transform: translate3d(0, 0, 0); filter: blur(0); }
-        }
-        @keyframes sideCardReveal {
-            0% { opacity: 0; transform: translate3d(38px, 18px, 0) rotateY(-4deg); filter: blur(7px); }
-            100% { opacity: 1; transform: translate3d(0, 0, 0) rotateY(0); filter: blur(0); }
-        }
-        .hero-kicker::before {
-            transform-origin: left center;
-            animation: kickerLine 1.2s var(--fluid-ease) .25s both;
-        }
-        @keyframes kickerLine {
-            from { transform: scaleX(0); opacity: 0; }
-            to { transform: scaleX(1); opacity: 1; }
+            to { opacity: 1; transform: translate3d(0, 0, 0); }
         }
 
-        /* Revelação progressiva durante a rolagem */
+        /* Revelação na rolagem: sem blur (repaint caro em elemento de página
+           inteira) e sem will-change permanente, que mantinha uma camada de GPU
+           viva para cada seção durante toda a sessão. */
         .reveal-on-scroll {
             opacity: 0;
-            filter: blur(8px);
-            transform: translate3d(0, 30px, 0) scale(.992);
+            transform: translate3d(0, 18px, 0);
             transition:
-                opacity .85s var(--fluid-ease) var(--reveal-delay, 0ms),
-                transform .95s var(--fluid-ease) var(--reveal-delay, 0ms),
-                filter .75s ease var(--reveal-delay, 0ms);
-            will-change: opacity, transform, filter;
+                opacity .6s var(--fluid-ease) var(--reveal-delay, 0ms),
+                transform .6s var(--fluid-ease) var(--reveal-delay, 0ms);
         }
         .reveal-on-scroll.is-visible {
             opacity: 1;
-            filter: blur(0);
-            transform: translate3d(0, 0, 0) scale(1);
+            transform: translate3d(0, 0, 0);
         }
 
-        /* Cartões com luz responsiva e microinterações */
+        /* A luz que segue o ponteiro fica: é sutil e dá materialidade aos painéis.
+           O deslocamento de -5px e a sombra enorme saíram — num painel operacional,
+           cada card pulando ao passar o mouse vira ruído, não refinamento. */
         .motion-card {
             position: relative;
             isolation: isolate;
-            transform-style: preserve-3d;
-            transition: transform .65s var(--fluid-ease), border-color .45s ease, box-shadow .55s ease !important;
+            transition: border-color var(--t-base) var(--ease-inout);
         }
         .motion-card::after {
             content: "";
@@ -727,77 +1308,36 @@
             pointer-events: none;
             border-radius: inherit;
             opacity: 0;
-            background: radial-gradient(circle at var(--card-x, 50%) var(--card-y, 50%), rgba(215,245,255,.14), transparent 38%);
-            transition: opacity .45s ease;
+            background: radial-gradient(circle at var(--card-x, 50%) var(--card-y, 50%), rgba(215,245,255,.07), transparent 45%);
+            transition: opacity var(--t-base) var(--ease-inout);
         }
-        .motion-card:hover::after { opacity: 1; }
         @media (hover: hover) and (pointer: fine) {
-            .motion-card:hover {
-                transform: translate3d(0, -5px, 0);
-                border-color: rgba(215,245,255,.34) !important;
-                box-shadow: 0 28px 74px rgba(0,0,0,.28) !important;
-            }
+            .motion-card:hover::after { opacity: 1; }
+            .motion-card:hover { border-color: var(--line); }
         }
 
-        .accent-button, .outline-button {
-            position: relative;
-            overflow: hidden;
-            isolation: isolate;
-            transition: transform .5s var(--fluid-ease), border-color .35s ease, color .35s ease, background-color .35s ease !important;
-        }
-        .accent-button::before, .outline-button::before {
-            content: "";
-            position: absolute;
-            inset: -2px;
-            z-index: -1;
-            background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.42) 49%, transparent 63%);
-            transform: translateX(-125%);
-            transition: transform .85s var(--fluid-ease);
-        }
-        .accent-button:hover::before, .outline-button:hover::before { transform: translateX(125%); }
-        .accent-button:hover, .outline-button:hover { transform: translateY(-2px); }
-        .accent-button i { transition: transform .5s var(--fluid-ease); }
-        .accent-button:hover i { transform: translateX(4px); }
+        /* O brilho diagonal que atravessava os botões era decoração de landing
+           page. O feedback agora é a mudança de cor mais a seta que avança. */
+        .accent-button i { transition: transform var(--t-base) var(--ease-out); }
+        .accent-button:hover i { transform: translateX(3px); }
 
-        /* Números e registros com entrada mais orgânica */
-        #statTotal, #statTotalBlocked, #statPartialBlocked, #statCleared {
-            font-variant-numeric: tabular-nums;
-            transition: transform .35s var(--fluid-ease), opacity .35s ease;
+        /* Números: tabulares para alinhar coluna a coluna, com um realce
+           discreto durante a contagem. */
+        .status-panel__figure, .status-metric__value {
+            transition: color var(--t-base) var(--ease-inout);
         }
-        .stat-counting { transform: translateY(-2px) scale(1.035); }
+        .stat-counting { color: var(--apisul-accent-soft); }
+
         .table-row-enter {
             opacity: 0;
-            transform: translate3d(0, 10px, 0);
-            animation: rowEnter .5s var(--fluid-ease) forwards;
+            animation: rowEnter .38s var(--fluid-ease) forwards;
         }
         @keyframes rowEnter {
-            to { opacity: 1; transform: translate3d(0, 0, 0); }
+            to { opacity: 1; }
         }
-
-        /* Títulos de seção com linha que se desenha */
-        .section-heading-motion {
-            position: relative;
-            display: inline-block;
-        }
-        .section-heading-motion::after {
-            content: "";
-            position: absolute;
-            left: 0;
-            bottom: -.35rem;
-            width: min(70px, 34%);
-            height: 1px;
-            background: linear-gradient(90deg, var(--apisul-accent), transparent);
-            transform: scaleX(0);
-            transform-origin: left center;
-            transition: transform 1s var(--fluid-ease) .18s;
-        }
-        .is-visible .section-heading-motion::after,
-        .section-heading-motion.heading-visible::after { transform: scaleX(1); }
 
         @media (max-width: 767px) {
-            .hero-flow-lines { opacity: .45; }
-            .apisul-hero::after { animation-duration: 12s; }
-            .char-rise { will-change: auto; }
+            .hero-flow-lines { opacity: .5; }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -809,16 +1349,18 @@
                 scroll-behavior: auto !important;
             }
             .reveal-on-scroll,
-            html.motion-enabled .hero-kicker,
+            html.motion-enabled .hero-title,
             html.motion-enabled .hero-copy,
             html.motion-enabled .hero-actions,
             html.motion-enabled .hero-side-card,
-            html.motion-enabled .hero-title.is-split .char-rise {
+            .table-row-enter {
                 opacity: 1 !important;
                 filter: none !important;
                 transform: none !important;
+                animation: none !important;
             }
             .hero-flow-lines { display: none; }
+            .risk-gauge__needle { transition: none !important; }
         }
     </style>
 
@@ -873,9 +1415,9 @@
                                 <span class="text-[9px] uppercase tracking-[0.16em] text-sky-400 font-bold px-1 pb-1">Controles</span>
 
                                 <!-- Status da planilha -->
-                                <div class="bg-emerald-950/40 border border-emerald-500/25 text-emerald-300 px-3 py-2 rounded-lg text-[11px] font-semibold flex items-center gap-2 w-full" title="Conectado à planilha do Google Drive">
-                                    <span class="icon-chip sm tone-emerald" style="width:22px;height:22px;font-size:.62rem;"><i class="fa-solid fa-database"></i></span>
-                                    <span id="sheetSyncStatus">Planilha Conectada</span>
+                                <div id="sheetSyncChip" class="sync-chip" data-state="pending">
+                                    <span class="sync-chip__dot" aria-hidden="true"></span>
+                                    <span id="sheetSyncStatus">Conectando…</span>
                                 </div>
 
                                 <!-- Somente leitura / administrador -->
@@ -891,7 +1433,7 @@
 
                                 <!-- Tema do mapa -->
                                 <button onclick="toggleMapTheme()" id="mapThemeToggleBtn" class="outline-button px-3 py-2 rounded-lg text-[11px] font-semibold flex items-center gap-2 transition-all w-full" title="Alternar mapa claro/escuro">
-                                    <span class="icon-chip sm tone-indigo" style="width:22px;height:22px;font-size:.62rem;"><i id="mapThemeIcon" class="fa-solid fa-sun"></i></span>
+                                    <span class="icon-chip sm tone-indigo" style="width:22px;height:22px;font-size:.62rem;"><i id="mapThemeIcon" class="fa-solid fa-moon"></i></span>
                                     <span id="mapThemeText" class="text-indigo-200 font-bold">Mapa Claro</span>
                                 </button>
 
@@ -916,16 +1458,15 @@
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
                 <div class="lg:col-span-8">
-                    <span class="hero-kicker">Grupo Apisul · Inteligência Operacional</span>
-                    <h1 class="hero-title mt-5">Inteligência logística para <em>decisões críticas.</em></h1>
+                    <h1 class="hero-title">Inteligência logística para <em>decisões críticas.</em></h1>
                     <p class="hero-copy mt-6">
                         Monitoramento integrado de mobilizações, bloqueios e impactos em corredores estratégicos — com visão executiva, dados georreferenciados e atualização contínua para proteger a operação.
                     </p>
                     <div class="mt-8 flex flex-wrap gap-3">
-                        <a href="#mapa-operacional" class="accent-button rounded-lg px-5 py-3 text-xs font-bold uppercase tracking-[0.12em] transition-all">
-                            Ver mapa operacional <i class="fa-solid fa-arrow-right ml-2"></i>
+                        <a href="#mapa-operacional" class="accent-button">
+                            Ver mapa operacional <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                         </a>
-                        <a href="#registros" class="outline-button rounded-lg px-5 py-3 text-xs font-bold uppercase tracking-[0.12em] transition-all">
+                        <a href="#registros" class="outline-button">
                             Consultar registros
                         </a>
                     </div>
@@ -934,7 +1475,7 @@
                 <aside class="hero-side-card lg:col-span-4 rounded-xl p-5 sm:p-6">
                     <div class="flex items-start justify-between gap-4">
                         <div>
-                            <span class="text-[10px] uppercase tracking-[0.16em] text-sky-400 font-bold">Status Operacional</span>
+                            <span class="field-label">Status operacional</span>
                             <h2 class="text-2xl text-white mt-2">Monitoramento ativo</h2>
                         </div>
                         <div class="w-11 h-11 rounded-full border border-sky-500/40 flex items-center justify-center text-sky-300">
@@ -944,12 +1485,12 @@
                     <p class="text-xs text-slate-400 leading-relaxed mt-4">Consolidação automática de ocorrências, fontes externas e coordenadas operacionais.</p>
                     <div class="hero-metric mt-5 pt-4 grid grid-cols-2 gap-4">
                         <div>
-                            <span class="block text-xl font-semibold text-white">60s</span>
-                            <span class="text-[10px] uppercase tracking-wider text-slate-500">Ciclo de atualização</span>
+                            <span class="block text-xl font-semibold text-white">5min</span>
+                            <span class="field-label mt-1">Ciclo de atualização</span>
                         </div>
                         <div>
                             <span class="block text-xl font-semibold text-white">24/7</span>
-                            <span class="text-[10px] uppercase tracking-wider text-slate-500">Visibilidade</span>
+                            <span class="field-label mt-1">Visibilidade</span>
                         </div>
                     </div>
                     <div class="mt-5 rounded-lg bg-emerald-950/40 border border-emerald-500/25 px-3 py-2.5 flex items-center gap-2.5 text-[11px] text-emerald-300">
@@ -961,147 +1502,116 @@
         </section>
 
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <section class="status-panel" aria-label="Situação da malha monitorada">
+            <div class="status-panel__lead">
+                <span class="field-label">Pontos monitorados</span>
+                <p id="statTotal" class="status-panel__figure">--</p>
+            </div>
+
+            <dl class="status-panel__breakdown">
+                <div class="status-metric" data-tone="red">
+                    <dt class="status-metric__label">Bloqueio total</dt>
+                    <dd class="status-metric__value" id="statTotalBlocked">--</dd>
+                    <p class="status-metric__share" id="shareTotalBlocked">—</p>
+                    <p class="status-metric__note">Acesso interrompido</p>
+                </div>
+                <div class="status-metric" data-tone="amber">
+                    <dt class="status-metric__label">Bloqueio parcial</dt>
+                    <dd class="status-metric__value" id="statPartialBlocked">--</dd>
+                    <p class="status-metric__share" id="sharePartialBlocked">—</p>
+                    <p class="status-metric__note">Lentidão ou faixas liberadas</p>
+                </div>
+                <div class="status-metric" data-tone="emerald">
+                    <dt class="status-metric__label">Via liberada</dt>
+                    <dd class="status-metric__value" id="statCleared">--</dd>
+                    <p class="status-metric__share" id="shareCleared">—</p>
+                    <p class="status-metric__note">Tráfego fluindo</p>
+                </div>
+            </dl>
+
+            <div id="compositionBar" class="composition-bar" role="img" aria-label="Composição dos pontos monitorados">
+                <span class="composition-bar__seg" data-seg="TOTAL"></span>
+                <span class="composition-bar__seg" data-seg="PARCIAL"></span>
+                <span class="composition-bar__seg" data-seg="LIBERADO"></span>
+            </div>
+        </section>
+
+        <div id="mapa-operacional" class="panel">
             
-            <!-- Total Ocorrências -->
-            <div class="bg-navy-900 border border-navy-800 stat-card-elegant rounded-2xl p-5 flex items-center justify-between shadow-lg relative overflow-hidden gap-3">
+            <div class="panel-head panel-head--split">
                 <div>
-                    <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Pontos Mapeados</span>
-                    <h3 id="statTotal" class="text-4xl sm:text-5xl font-bold font-heading text-white mt-1.5 tracking-tight">--</h3>
-                    <p class="text-[11px] text-sky-400 mt-1.5 flex items-center gap-1.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span> Sincronizado com Google Sheets
-                    </p>
+                    <h2 class="panel-title">Mapa operacional</h2>
+                    <p class="panel-subtitle">Coordenadas e status das rodovias monitoradas, atualizados de forma contínua.</p>
                 </div>
-                <div class="icon-chip lg">
-                    <i class="fa-solid fa-map-location-dot"></i>
+
+                <div class="filter-group" role="group" aria-label="Filtrar por status">
+                    <button type="button" onclick="filterMap('ALL')" class="filter-pill is-active" data-status-filter="ALL" aria-pressed="true">Todos</button>
+                    <button type="button" onclick="filterMap('TOTAL')" class="filter-pill" data-status-filter="TOTAL" aria-pressed="false"><span class="dot" data-tone="red"></span>Totais</button>
+                    <button type="button" onclick="filterMap('PARCIAL')" class="filter-pill" data-status-filter="PARCIAL" aria-pressed="false"><span class="dot" data-tone="amber"></span>Parciais</button>
+                    <button type="button" onclick="filterMap('LIBERADO')" class="filter-pill" data-status-filter="LIBERADO" aria-pressed="false"><span class="dot" data-tone="emerald"></span>Liberados</button>
                 </div>
             </div>
 
-            <!-- Bloqueios Totais -->
-            <div class="bg-navy-900 border border-red-500/25 stat-card-elegant rounded-2xl p-5 flex items-center justify-between shadow-lg relative overflow-hidden gap-3">
-                <div>
-                    <span class="text-[11px] font-semibold uppercase tracking-wider text-red-400/90">Bloqueio Total</span>
-                    <h3 id="statTotalBlocked" class="text-4xl sm:text-5xl font-bold font-heading text-red-400 mt-1.5 tracking-tight">--</h3>
-                    <p class="text-[11px] text-slate-400 mt-1.5">Acesso Interrompido</p>
-                </div>
-                <div class="icon-chip lg tone-red pulse-red">
-                    <i class="fa-solid fa-ban"></i>
-                </div>
-            </div>
+            <p id="filterSummary" class="filter-summary" role="status" hidden></p>
 
-            <!-- Bloqueios Parciais -->
-            <div class="bg-navy-900 border border-amber-500/25 stat-card-elegant rounded-2xl p-5 flex items-center justify-between shadow-lg relative overflow-hidden gap-3">
-                <div>
-                    <span class="text-[11px] font-semibold uppercase tracking-wider text-amber-400/90">Bloqueio Parcial</span>
-                    <h3 id="statPartialBlocked" class="text-4xl sm:text-5xl font-bold font-heading text-amber-400 mt-1.5 tracking-tight">--</h3>
-                    <p class="text-[11px] text-slate-400 mt-1.5">Lentidão / Faixas Liberadas</p>
-                </div>
-                <div class="icon-chip lg tone-amber">
-                    <i class="fa-solid fa-truck-ramp-box"></i>
-                </div>
-            </div>
+            <div class="map-frame">
+                <div id="map"></div>
 
-            <!-- Liberados / Normalizados -->
-            <div class="bg-navy-900 border border-emerald-500/25 stat-card-elegant rounded-2xl p-5 flex items-center justify-between shadow-lg relative overflow-hidden gap-3">
-                <div>
-                    <span class="text-[11px] font-semibold uppercase tracking-wider text-emerald-400/90">Vias Liberadas</span>
-                    <h3 id="statCleared" class="text-4xl sm:text-5xl font-bold font-heading text-emerald-400 mt-1.5 tracking-tight">--</h3>
-                    <p class="text-[11px] text-slate-400 mt-1.5">Tráfego Fluindo</p>
+                <div id="mapEmptyState" class="map-empty" hidden>
+                    <p class="map-empty__title">Nenhum ponto neste filtro</p>
+                    <button type="button" class="map-empty__action" onclick="clearFilters()">Ver todos os pontos</button>
                 </div>
-                <div class="icon-chip lg tone-emerald">
-                    <i class="fa-solid fa-circle-check"></i>
+
+                <div class="map-legend">
+                    <span class="field-label">Legenda</span>
+                    <span class="map-legend__item"><span class="dot" data-tone="red"></span>Bloqueio total</span>
+                    <span class="map-legend__item"><span class="dot" data-tone="amber"></span>Bloqueio parcial</span>
+                    <span class="map-legend__item"><span class="dot" data-tone="emerald"></span>Via liberada</span>
                 </div>
             </div>
         </div>
 
-        <div id="mapa-operacional" class="bg-navy-900 border border-navy-800 rounded-xl p-5 shadow-2xl space-y-4">
+        <div id="registros" class="panel">
             
-            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-navy-800 pb-3">
-                <div class="section-kicker items-start">
-                    <span class="icon-chip md mt-0.5"><i class="fa-solid fa-map-location-dot"></i></span>
-                    <div>
-                        <h2 class="font-heading">Mapa de Bloqueios e Pontos de Parada em Tempo Real</h2>
-                        <p class="text-xs text-slate-400 mt-0.5">Visualize as coordenadas exatas (Lat/Long) e o status das rodovias em tempo real.</p>
-                    </div>
+            <div class="panel-head panel-head--split">
+                <div>
+                    <h2 class="panel-title">Registro de ocorrências</h2>
+                    <p class="panel-subtitle">Sincronizado com a planilha oficial do Grupo Apisul.</p>
                 </div>
 
-                <div class="filter-group w-full md:w-auto overflow-x-auto">
-                    <button onclick="filterMap('ALL')" class="filter-pill is-active" id="btnFilterAll">
-                        <i class="fa-solid fa-layer-group text-[10px]"></i> Todos
-                    </button>
-                    <button onclick="filterMap('TOTAL')" class="filter-pill" id="btnFilterTotal">
-                        <span class="dot bg-red-500"></span> Totais
-                    </button>
-                    <button onclick="filterMap('PARCIAL')" class="filter-pill" id="btnFilterParcial">
-                        <span class="dot bg-amber-500"></span> Parciais
-                    </button>
-                    <button onclick="filterMap('LIBERADO')" class="filter-pill" id="btnFilterLiberado">
-                        <span class="dot bg-emerald-500"></span> Liberados
-                    </button>
-                </div>
-            </div>
+                <div class="table-controls">
+                    <div class="search-field">
+                        <i class="fa-solid fa-magnifying-glass search-field__icon" aria-hidden="true"></i>
+                        <label class="sr-only" for="searchInput">Buscar registros</label>
+                        <input type="search" id="searchInput" name="registros-busca" oninput="filterTable()" placeholder="Buscar registros…" class="apisul-input search-field__input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                    </div>
 
-            <!-- Leaflet Container -->
-            <div class="relative w-full h-[480px] rounded-xl overflow-hidden border border-navy-700 shadow-inner">
-                <div id="map" class="w-full h-full bg-navy-950 z-10"></div>
-                
-                <div class="absolute bottom-4 left-4 z-[400] bg-navy-900/90 backdrop-blur-md border border-navy-700 p-3.5 rounded-xl shadow-xl text-xs space-y-2 hidden sm:block">
-                    <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block mb-1.5">Legenda dos Pinos</span>
-                    <div class="flex items-center gap-2 text-slate-200">
-                        <span class="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_0_3px_rgba(239,68,68,.18)]"></span>
-                        <span>Bloqueio Total</span>
-                    </div>
-                    <div class="flex items-center gap-2 text-slate-200">
-                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_0_3px_rgba(245,158,11,.18)]"></span>
-                        <span>Bloqueio Parcial</span>
-                    </div>
-                    <div class="flex items-center gap-2 text-slate-200">
-                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,.18)]"></span>
-                        <span>Pista Liberada</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="registros" class="bg-navy-900 border border-navy-800 rounded-xl p-5 shadow-2xl space-y-4">
-            
-            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-navy-800 pb-3">
-                <div class="section-kicker items-start">
-                    <span class="icon-chip md mt-0.5"><i class="fa-solid fa-table-list"></i></span>
-                    <div>
-                        <h2 class="font-heading">Registro de Paradas &amp; Notícias em Tempo Real</h2>
-                        <p class="text-xs text-slate-400 mt-0.5">Estrutura sincronizada com a planilha Google Sheets (Aba única com coluna 'Local / Endereço').</p>
-                    </div>
-                </div>
-
-                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                    <div class="relative flex-1 md:w-64">
-                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-                        <input type="text" id="searchInput" oninput="filterTable()" placeholder="Buscar por rodovia, cidade, notícia..." class="apisul-input w-full text-xs pl-9 pr-3 py-2.5 placeholder:text-slate-500">
-                    </div>
-                    
-                    <button onclick="exportToCSV()" class="outline-button text-xs font-semibold px-3.5 py-2.5 rounded-lg flex items-center gap-2 transition-all">
-                        <i class="fa-solid fa-download"></i>
+                    <button type="button" onclick="exportToCSV()" class="outline-button">
+                        <i class="fa-solid fa-download" aria-hidden="true"></i>
                         <span>Exportar CSV</span>
                     </button>
                 </div>
             </div>
 
-            <div class="overflow-x-auto custom-scrollbar rounded-lg border border-navy-800">
-                <table class="w-full text-left text-xs text-slate-300">
-                    <thead class="bg-navy-950 text-sky-400 font-bold uppercase tracking-wider text-[11px] border-b border-navy-800">
+            <p id="filterSummaryTable" class="filter-summary" role="status" hidden></p>
+
+            <div class="table-scroll custom-scrollbar">
+                <table class="data-table">
+                    <caption class="sr-only">Ocorrências de bloqueio monitoradas, com localização, status e fonte.</caption>
+                    <thead>
                         <tr>
-                            <th class="px-4 py-3.5">ID / Hora</th>
-                            <th class="px-4 py-3.5">UF / Cidade</th>
-                            <th class="px-4 py-3.5">Local / Endereço</th>
-                            <th class="px-4 py-3.5">Coordenadas (Lat / Long)</th>
-                            <th class="px-4 py-3.5 text-center">Status</th>
-                            <th class="px-4 py-3.5">Notícia / Fonte</th>
-                            <th class="px-4 py-3.5 text-right no-print">Ações</th>
+                            <th scope="col">Registro</th>
+                            <th scope="col">UF / Cidade</th>
+                            <th scope="col">Local</th>
+                            <th scope="col">Coordenadas</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Fonte</th>
+                            <th scope="col">Observações</th>
+                            <th scope="col" class="no-print"><span class="sr-only">Ações</span></th>
                         </tr>
                     </thead>
-                    <tbody id="tableBody" class="divide-y divide-navy-800/60 font-medium">
-                        <!-- Loaded dynamically from Google Sheets -->
+                    <tbody id="tableBody">
+                        <!-- Preenchido a partir da planilha -->
                     </tbody>
                 </table>
             </div>
@@ -1112,94 +1622,76 @@
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
             <!-- Contextualização -->
-            <div id="analise" class="lg:col-span-7 bg-navy-900 border border-navy-800 rounded-xl p-5 shadow-xl flex flex-col justify-between">
+            <div id="analise" class="panel lg:col-span-7 flex flex-col justify-between">
                 <div>
-                    <div class="flex items-center justify-between border-b border-navy-800 pb-3 mb-4">
-                        <div class="section-kicker">
-                            <span class="icon-chip sm"><i class="fa-solid fa-file-lines"></i></span>
-                            <h2 class="text-sm font-bold text-white uppercase tracking-wider">1. Contextualização &amp; Situação Atual</h2>
-                        </div>
-                        <span class="status-pill" style="background:rgba(75,195,247,.12); color:#D7F5FF; border:1px solid rgba(75,195,247,.32);">MP 1.343/2026</span>
+                    <div class="panel-head">
+                        <h2 class="panel-title">Contextualização &amp; situação atual</h2>
+                        <span class="status-pill pill-neutral">MP 1.343/2026</span>
                     </div>
 
-                    <div class="space-y-3.5 text-sm text-slate-300 leading-relaxed">
-                        <p class="bg-navy-800/60 p-3 rounded-lg border-l-4 border-sky-500">
-                            <strong class="text-white">Mobilização de Transportadores Autônomos:</strong> Concentração estratégica em acessos logísticos e portos principais, motivada pela pressão pela votação do piso mínimo de frete (MP 1.343/2026) no Senado Federal.
+                    <div class="context-body">
+                        <p class="context-lead">
+                            <strong>Mobilização de transportadores autônomos:</strong> concentração estratégica em acessos logísticos e portos principais, motivada pela pressão pela votação do piso mínimo de frete (MP 1.343/2026) no Senado Federal.
                         </p>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                            <div class="bg-navy-800/40 border border-navy-700/60 p-3 rounded-lg flex gap-2.5 items-start">
-                                <i class="fa-solid fa-anchor text-amber-400 text-base mt-0.5"></i>
-                                <div>
-                                    <strong class="text-slate-200 block text-sm">Foco nos Portos</strong>
-                                    Mobilizações ativas em vias de acesso ao Porto de Santos/SP e Paranaguá/PR sem paralisação geral consolidada até o momento.
-                                </div>
+
+                        <div class="context-grid">
+                            <div class="context-item">
+                                <h3 class="context-item__title">Foco nos portos</h3>
+                                <p>Mobilizações ativas em vias de acesso ao Porto de Santos/SP e Paranaguá/PR sem paralisação geral consolidada até o momento.</p>
                             </div>
-                            <div class="bg-navy-800/40 border border-navy-700/60 p-3 rounded-lg flex gap-2.5 items-start">
-                                <i class="fa-solid fa-building-columns text-sky-400 text-base mt-0.5"></i>
-                                <div>
-                                    <strong class="text-slate-200 block text-sm">Tramitação no Senado</strong>
-                                    Prazo limite de vigência da Medida Provisória estipulado. Diálogo aberto entre governo e lideranças da categoria.
-                                </div>
+                            <div class="context-item">
+                                <h3 class="context-item__title">Tramitação no Senado</h3>
+                                <p>Prazo limite de vigência da Medida Provisória estipulado. Diálogo aberto entre governo e lideranças da categoria.</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="mt-4 pt-3 border-t border-navy-800/80 flex items-center justify-between text-xs text-slate-400">
-                    <span><i class="fa-solid fa-circle-info text-sky-400"></i> Atualizações automáticas sincronizadas com o Google Sheets.</span>
-                    <span class="font-semibold text-slate-300">Fonte: Monitoramento Logístico Integrado</span>
+                <div class="panel-foot">
+                    <span>Atualizações sincronizadas automaticamente com a planilha oficial.</span>
+                    <span>Fonte: Monitoramento Logístico Integrado</span>
                 </div>
             </div>
 
             <!-- Avaliação de Risco -->
-            <div class="lg:col-span-5 bg-navy-900 border border-navy-800 rounded-xl p-5 shadow-xl flex flex-col justify-between">
+            <div class="panel lg:col-span-5 flex flex-col justify-between">
                 <div>
-                    <div class="flex items-center justify-between border-b border-navy-800 pb-3 mb-4">
-                        <div class="section-kicker">
-                            <span class="icon-chip sm tone-amber"><i class="fa-solid fa-chart-pie"></i></span>
-                            <h2 class="text-sm font-bold text-white uppercase tracking-wider">2. Avaliação de Risco Logístico</h2>
-                        </div>
-                        <span class="status-pill pill-amber">RISCO MODERADO</span>
+                    <div class="panel-head">
+                        <h2 class="panel-title">Avaliação de risco logístico</h2>
+                        <span id="riskPill" class="status-pill pill-neutral">CALCULANDO</span>
                     </div>
 
-                    <div class="flex flex-col sm:flex-row items-center gap-4 bg-navy-850 p-3.5 rounded-lg border border-navy-700 mb-4">
-                        <div class="relative w-32 h-20 flex flex-col items-center justify-center">
-                            <svg class="w-32 h-20" viewBox="0 0 100 55">
-                                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#1C2541" stroke-width="10" stroke-linecap="round"/>
-                                <path d="M 10 50 A 40 40 0 0 1 36 21" fill="none" stroke="#10B981" stroke-width="10" stroke-linecap="round"/>
-                                <path d="M 36 21 A 40 40 0 0 1 64 21" fill="none" stroke="#F59E0B" stroke-width="10" />
-                                <path d="M 64 21 A 40 40 0 0 1 90 50" fill="none" stroke="#EF4444" stroke-width="10" stroke-linecap="round"/>
-                                <line x1="50" y1="50" x2="50" y2="18" stroke="#F8FAFC" stroke-width="3" stroke-linecap="round" transform="rotate(15 50 50)" />
-                                <circle cx="50" cy="50" r="5" fill="#F8FAFC" />
+                    <div class="risk-readout">
+                        <div class="risk-gauge">
+                            <svg viewBox="0 0 100 58" role="img" aria-labelledby="riskGaugeTitle">
+                                <title id="riskGaugeTitle">Medidor de risco logístico</title>
+                                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="var(--surface-3)" stroke-width="7" stroke-linecap="round"/>
+                                <path d="M 10 50 A 40 40 0 0 1 36 21" fill="none" stroke="var(--ok)" stroke-width="7" stroke-linecap="round" opacity=".55"/>
+                                <path d="M 36 21 A 40 40 0 0 1 64 21" fill="none" stroke="var(--warn)" stroke-width="7" opacity=".55"/>
+                                <path d="M 64 21 A 40 40 0 0 1 90 50" fill="none" stroke="var(--danger)" stroke-width="7" stroke-linecap="round" opacity=".55"/>
+                                <g id="riskNeedle" class="risk-gauge__needle">
+                                    <line x1="50" y1="50" x2="50" y2="19" stroke="var(--text-primary)" stroke-width="2.5" stroke-linecap="round"/>
+                                </g>
+                                <circle cx="50" cy="50" r="4" fill="var(--text-primary)"/>
                             </svg>
-                            <span class="text-[11px] font-bold text-amber-400 uppercase mt-1">Cenário em Definição</span>
+                            <span id="riskLevel" class="risk-gauge__level">—</span>
                         </div>
-                        <div class="space-y-1 text-xs flex-1">
-                            <span class="text-slate-400 block font-semibold uppercase text-[10px]">Probabilidade de Impacto</span>
-                            <h4 class="text-white font-bold text-sm">MODERADA A CURTO PRAZO</h4>
-                            <p class="text-slate-300 leading-snug">Potencial de lentidão em acessos portuários e retenção pontual de frotas rodoviárias.</p>
+                        <div class="risk-readout__body">
+                            <span class="field-label">Probabilidade de impacto</span>
+                            <p id="riskDescription" class="risk-readout__desc">Calculando a partir dos pontos monitorados…</p>
+                            <p id="riskBasis" class="risk-readout__basis"></p>
                         </div>
                     </div>
 
-                    <ul class="space-y-2 text-xs text-slate-300">
-                        <li class="flex items-center gap-2.5">
-                            <i class="fa-solid fa-triangle-exclamation text-amber-400"></i>
-                            <span>Bloqueios temporários em acessos a terminais de carga.</span>
-                        </li>
-                        <li class="flex items-center gap-2.5">
-                            <i class="fa-solid fa-clock-rotate-left text-sky-400"></i>
-                            <span>Aumento do tempo de trânsito em rodovias troncais (BR-116, BR-101, BR-163).</span>
-                        </li>
-                        <li class="flex items-center gap-2.5">
-                            <i class="fa-solid fa-boxes-packing text-slate-400"></i>
-                            <span>Necessidade de rotas alternativas para distribuição urbana.</span>
-                        </li>
+                    <ul class="risk-factors">
+                        <li class="risk-factor">Bloqueios temporários em acessos a terminais de carga.</li>
+                        <li class="risk-factor">Aumento do tempo de trânsito em rodovias troncais (BR-116, BR-101, BR-163).</li>
+                        <li class="risk-factor">Necessidade de rotas alternativas para distribuição urbana.</li>
                     </ul>
                 </div>
 
-                <div class="mt-4 pt-3 border-t border-navy-800 text-[11px] text-slate-400 flex justify-between">
-                    <span>Ação recomendada: <strong>Monitorar janelas de atracação</strong></span>
+                <div class="panel-foot">
+                    <span>Ação recomendada: <strong>monitorar janelas de atracação</strong></span>
                 </div>
             </div>
         </div>
@@ -1207,95 +1699,65 @@
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
             <!-- Cenários Prospectivos -->
-            <div class="lg:col-span-6 bg-navy-900 border border-navy-800 rounded-xl p-5 shadow-xl space-y-4">
-                <div class="section-kicker border-b border-navy-800 pb-3">
-                    <span class="icon-chip sm"><i class="fa-solid fa-diagram-project"></i></span>
-                    <h2 class="text-sm font-bold text-white uppercase tracking-wider">3. Cenários Prospectivos</h2>
+            <div class="panel lg:col-span-6">
+                <div class="panel-head">
+                    <h2 class="panel-title">Cenários prospectivos</h2>
                 </div>
 
-                <div class="space-y-3">
-                    <div class="bg-emerald-950/20 border border-emerald-500/30 p-3.5 rounded-lg flex items-start gap-3">
-                        <div class="w-8 h-8 rounded bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5">
-                            <i class="fa-solid fa-circle-check text-sm"></i>
+                <ol class="scenario-list">
+                    <li class="scenario" data-tone="emerald">
+                        <div class="scenario__head">
+                            <h3 class="scenario__title">Cenário favorável</h3>
+                            <span class="scenario__odds">Probabilidade alta</span>
                         </div>
-                        <div class="text-xs">
-                            <div class="flex items-center justify-between">
-                                <h4 class="font-bold text-emerald-300">CENÁRIO FAVORÁVEL</h4>
-                                <span class="text-[10px] font-bold text-emerald-400 bg-emerald-950 border border-emerald-800 px-2 py-0.5 rounded">PROBABILIDADE ALTA</span>
-                            </div>
-                            <p class="text-slate-300 mt-1">Aprovação da matéria no Senado Federal. Tendência de desmobilização gradual do movimento com liberação rápida de acessos rodoviários.</p>
+                        <p class="scenario__body">Aprovação da matéria no Senado Federal. Tendência de desmobilização gradual do movimento com liberação rápida de acessos rodoviários.</p>
+                    </li>
+                    <li class="scenario" data-tone="amber">
+                        <div class="scenario__head">
+                            <h3 class="scenario__title">Cenário intermediário</h3>
+                            <span class="scenario__odds">Probabilidade moderada</span>
                         </div>
-                    </div>
-
-                    <div class="bg-amber-950/20 border border-amber-500/30 p-3.5 rounded-lg flex items-start gap-3">
-                        <div class="w-8 h-8 rounded bg-amber-500/20 flex items-center justify-center text-amber-400 shrink-0 mt-0.5">
-                            <i class="fa-solid fa-triangle-exclamation text-sm"></i>
+                        <p class="scenario__body">Atraso na votação sem perda de validade imediata. Manifestações pontuais mantidas como forma de pressão em corredores específicos.</p>
+                    </li>
+                    <li class="scenario" data-tone="red">
+                        <div class="scenario__head">
+                            <h3 class="scenario__title">Cenário adverso</h3>
+                            <span class="scenario__odds">Probabilidade baixa</span>
                         </div>
-                        <div class="text-xs">
-                            <div class="flex items-center justify-between">
-                                <h4 class="font-bold text-amber-300">CENÁRIO INTERMEDIÁRIO</h4>
-                                <span class="text-[10px] font-bold text-amber-400 bg-amber-950 border border-amber-800 px-2 py-0.5 rounded">PROBABILIDADE MODERADA</span>
-                            </div>
-                            <p class="text-slate-300 mt-1">Atraso na votação sem perda de validade imediata. Manifestações pontuais mantidas como forma de pressão em corredores específicos.</p>
-                        </div>
-                    </div>
-
-                    <div class="bg-red-950/20 border border-red-500/30 p-3.5 rounded-lg flex items-start gap-3">
-                        <div class="w-8 h-8 rounded bg-red-500/20 flex items-center justify-center text-red-400 shrink-0 mt-0.5">
-                            <i class="fa-solid fa-circle-xmark text-sm"></i>
-                        </div>
-                        <div class="text-xs">
-                            <div class="flex items-center justify-between">
-                                <h4 class="font-bold text-red-300">CENÁRIO ADVERSO</h4>
-                                <span class="text-[10px] font-bold text-red-400 bg-red-950 border border-red-800 px-2 py-0.5 rounded">PROBABILIDADE BAIXA</span>
-                            </div>
-                            <p class="text-slate-300 mt-1">Atraso crítico na votação. Aumento na adesão de categorias com bloqueios totais em acessos portuários principais.</p>
-                        </div>
-                    </div>
-                </div>
+                        <p class="scenario__body">Atraso crítico na votação. Aumento na adesão de categorias com bloqueios totais em acessos portuários principais.</p>
+                    </li>
+                </ol>
             </div>
 
             <!-- Recomendações Logísticas -->
-            <div class="lg:col-span-6 bg-navy-900 border border-navy-800 rounded-xl p-5 shadow-xl flex flex-col justify-between">
+            <div class="panel lg:col-span-6 flex flex-col justify-between">
                 <div>
-                    <div class="section-kicker border-b border-navy-800 pb-3 mb-4">
-                        <span class="icon-chip sm"><i class="fa-solid fa-clipboard-check"></i></span>
-                        <h2 class="text-sm font-bold text-white uppercase tracking-wider">4. Conclusão &amp; Recomendações Estratégicas</h2>
+                    <div class="panel-head">
+                        <h2 class="panel-title">Conclusão &amp; recomendações estratégicas</h2>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                        <div class="bg-navy-800/50 border border-navy-700/80 p-3 rounded-lg">
-                            <div class="flex items-center gap-2 text-sky-400 font-bold mb-1">
-                                <i class="fa-solid fa-satellite-dish"></i> Monitoramento Contínuo
-                            </div>
-                            <p class="text-slate-300">Acompanhar comunicados oficiais e lideranças em canais de imprensa regional.</p>
-                        </div>
-
-                        <div class="bg-navy-800/50 border border-navy-700/80 p-3 rounded-lg">
-                            <div class="flex items-center gap-2 text-amber-400 font-bold mb-1">
-                                <i class="fa-solid fa-truck-fast"></i> Gestão de Janelas
-                            </div>
-                            <p class="text-slate-300">Antecipar ou reprogramar carregamentos de alta prioridade para regiões portuárias.</p>
-                        </div>
-
-                        <div class="bg-navy-800/50 border border-navy-700/80 p-3 rounded-lg">
-                            <div class="flex items-center gap-2 text-emerald-400 font-bold mb-1">
-                                <i class="fa-solid fa-map-location"></i> Planos de Desvio
-                            </div>
-                            <p class="text-slate-300">Manter rotas alternativas alinhadas com as equipes de gerenciamento de risco.</p>
-                        </div>
-
-                        <div class="bg-navy-800/50 border border-navy-700/80 p-3 rounded-lg">
-                            <div class="flex items-center gap-2 text-indigo-400 font-bold mb-1">
-                                <i class="fa-solid fa-headset"></i> Canal Aberto
-                            </div>
-                            <p class="text-slate-300">Manter comunicação constante com motoristas em trânsito no raio de paralisações.</p>
-                        </div>
-                    </div>
+                    <ul class="recommendations">
+                        <li class="recommendation">
+                            <h3 class="recommendation__title">Monitoramento contínuo</h3>
+                            <p>Acompanhar comunicados oficiais e lideranças em canais de imprensa regional.</p>
+                        </li>
+                        <li class="recommendation">
+                            <h3 class="recommendation__title">Gestão de janelas</h3>
+                            <p>Antecipar ou reprogramar carregamentos de alta prioridade para regiões portuárias.</p>
+                        </li>
+                        <li class="recommendation">
+                            <h3 class="recommendation__title">Planos de desvio</h3>
+                            <p>Manter rotas alternativas alinhadas com as equipes de gerenciamento de risco.</p>
+                        </li>
+                        <li class="recommendation">
+                            <h3 class="recommendation__title">Canal aberto</h3>
+                            <p>Manter comunicação constante com motoristas em trânsito no raio de paralisações.</p>
+                        </li>
+                    </ul>
                 </div>
 
-                <div class="mt-4 pt-3 border-t border-navy-800 text-xs text-center text-slate-400">
-                    <span>Módulo de Inteligência de Riscos e Logística Operacional — Sincronizado via Google Apps Script</span>
+                <div class="panel-foot">
+                    <span>Módulo de Inteligência de Riscos e Logística Operacional</span>
                 </div>
             </div>
         </div>
@@ -1308,7 +1770,7 @@
         </div>
     </footer>
 
-    <div id="addModal" class="fixed inset-0 z-[1000] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div id="addModal" class="fixed inset-0 z-[1000] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <div class="bg-navy-900 border border-navy-700 rounded-xl w-full max-w-xl overflow-hidden shadow-2xl">
             <div class="bg-navy-950 px-6 py-4 border-b border-navy-800 flex items-center justify-between">
                 <h3 id="modalTitle" class="font-bold text-white text-base flex items-center gap-2.5 font-heading">
@@ -1369,6 +1831,11 @@
                     <input type="url" id="inputNews" placeholder="https://g1.globo.com/..." class="w-full apisul-input p-2.5 text-white">
                 </div>
 
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Observações</label>
+                    <textarea id="inputObs" rows="2" placeholder="Detalhes adicionais sobre a ocorrência…" class="w-full apisul-input p-2.5 text-white resize-none"></textarea>
+                </div>
+
                 <div class="pt-2 flex justify-end gap-3">
                     <button type="button" onclick="closeAddModal()" class="px-4 py-2 bg-navy-800 text-slate-300 rounded font-semibold hover:bg-navy-700">Cancelar</button>
                     <button type="submit" id="btnSaveSubmit" class="px-5 py-2 bg-sky-500 text-navy-950 rounded font-bold hover:bg-sky-400 flex items-center gap-2">
@@ -1380,12 +1847,10 @@
         </div>
     </div>
 
-    <div id="authModal" class="fixed inset-0 z-[1100] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div id="authModal" class="fixed inset-0 z-[1100] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
         <div class="bg-navy-900 border border-navy-700 rounded-xl w-full max-w-sm overflow-hidden shadow-2xl">
             <div class="bg-navy-950 px-5 py-3.5 border-b border-navy-800 flex items-center justify-between">
-                <h3 class="font-bold text-white text-sm flex items-center gap-2.5 font-heading">
-                    <span class="icon-chip sm tone-amber"><i class="fa-solid fa-lock"></i></span> Restrição de Modificação
-                </h3>
+                <h3 id="authModalTitle" class="font-bold text-white text-sm font-heading">Restrição de modificação</h3>
                 <button onclick="closeAuthModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div class="p-5 space-y-3.5 text-xs">
@@ -1424,16 +1889,55 @@
                 lng: -49.287531,
                 status: "TOTAL",
                 news: "https://g1.globo.com",
-                sourceName: "Link da Fonte"
+                sourceName: "Link da Fonte",
+                observacoes: ""
             }
         ];
 
         let map;
         let mapMarkers = [];
         let isAdmin = false;
-        const ADMIN_PIN = "112270";
         let pendingAdminAction = null;
         let pollInterval = null;
+        // Distingue "ainda carregando" de "carregou e está vazio" — os dois vazios
+        // precisam de mensagens diferentes na tabela.
+        let hasLoaded = false;
+
+        // O PIN não pode viver em texto puro no cliente: qualquer visitante leria o código-fonte
+        // e ganharia permissão de escrita na planilha. Guardamos apenas o hash SHA-256; a
+        // verificação compara hashes, então o segredo nunca trafega no bundle.
+        // Continua sendo uma barreira de conveniência (não substitui autorização no Apps Script),
+        // mas remove o segredo do código.
+        const ADMIN_PIN_HASH = '74660a2c47392aa8061ed2e3e3f7f995c8839565f56a7cc3e92dae3626f6036d';
+
+        async function hashPin(value) {
+            const bytes = new TextEncoder().encode(String(value));
+            const digest = await crypto.subtle.digest('SHA-256', bytes);
+            return Array.from(new Uint8Array(digest))
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
+        }
+
+        /** Neutraliza HTML vindo da planilha antes de qualquer innerHTML. */
+        function escapeHTML(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        /** Só deixa passar http(s) — bloqueia javascript: e data: vindos da planilha. */
+        function safeURL(value) {
+            const raw = String(value ?? '').trim();
+            if (!/^https?:\/\//i.test(raw)) return '';
+            try {
+                return encodeURI(new URL(raw).href);
+            } catch {
+                return '';
+            }
+        }
 
         window.onload = function() {
             updateLiveTimestamp();
@@ -1442,7 +1946,7 @@
             fetchSpreadsheetData();
             
             // Auto-refresh from spreadsheet every 60 seconds
-            pollInterval = setInterval(fetchSpreadsheetData, 60000);
+            pollInterval = setInterval(fetchSpreadsheetData, 5 * 60000);
         };
 
         function fetchSpreadsheetData() {
@@ -1454,9 +1958,11 @@
                     if (resData && resData.status === "success" && Array.isArray(resData.data) && resData.data.length > 1) {
                         const parsed = parseGoogleSheetRows(resData.data);
                         if (parsed && parsed.length > 0) {
+                            const isFirstLoad = !hasLoaded;
                             occurrences = parsed;
-                            renderData();
-                            if (statusEl) statusEl.innerText = "Planilha Oficial Conectada";
+                            hasLoaded = true;
+                            renderData({ refit: isFirstLoad });
+                            setSyncState('ok', 'Planilha conectada');
                             updateLiveTimestamp();
                             return;
                         }
@@ -1469,22 +1975,36 @@
         }
 
         function fetchCSVFallback() {
-            const statusEl = document.getElementById('sheetSyncStatus');
             fetch(SPREADSHEET_CSV_URL)
                 .then(res => res.text())
                 .then(csvText => {
                     const matrix = parseCSVTo2DArray(csvText);
                     const parsedData = parseGoogleSheetRows(matrix);
                     if (parsedData && parsedData.length > 0) {
+                        const isFirstLoad = !hasLoaded;
                         occurrences = parsedData;
-                        renderData();
-                        if (statusEl) statusEl.innerText = "Planilha Oficial Conectada";
+                        hasLoaded = true;
+                        renderData({ refit: isFirstLoad });
+                        setSyncState('ok', 'Planilha conectada');
                         updateLiveTimestamp();
                     }
                 })
                 .catch(() => {
-                    if (statusEl) statusEl.innerText = "Sincronizado (Local)";
+                    hasLoaded = true;
+                    renderData();
+                    setSyncState('warn', 'Exibindo dados locais');
                 });
+        }
+
+        /**
+         * Estado de sincronização com significado visual, não só texto trocado.
+         * Antes o mesmo ponto verde piscava mesmo quando a conexão havia falhado.
+         */
+        function setSyncState(state, message) {
+            const el = document.getElementById('sheetSyncStatus');
+            const wrap = document.getElementById('sheetSyncChip');
+            if (el) el.textContent = message;
+            if (wrap) wrap.dataset.state = state;
         }
 
         function parseCSVTo2DArray(csvText) {
@@ -1545,6 +2065,7 @@
             let colLng = headers.findIndex(h => h.includes('lng') || h.includes('long'));
             let colStatus = headers.findIndex(h => h.includes('status'));
             let colNews = headers.findIndex(h => h.includes('fonte') || h.includes('notícia') || h.includes('noticia') || h.includes('link') || h.includes('url'));
+            let colObs = headers.findIndex(h => h.includes('observ') || h.includes('obs.') || h.includes('nota'));
 
             for (let i = 1; i < rows.length; i++) {
                 const row = rows[i];
@@ -1605,7 +2126,7 @@
                         }
                     }
 
-                    if (c !== colId && c !== colTime && c !== colUF && c !== colCidade && !valUpper.includes('MOBILIZAÇÃO')) {
+                    if (c !== colId && c !== colTime && c !== colUF && c !== colCidade && c !== colObs && !valUpper.includes('MOBILIZAÇÃO')) {
                         if (!textParts.includes(val)) {
                             textParts.push(val);
                         }
@@ -1614,6 +2135,8 @@
 
                 let localText = (colLocal !== -1 && row[colLocal]) ? String(row[colLocal]).trim() : textParts.join(' - ');
                 if (!localText && textParts.length > 0) localText = textParts.join(' - ');
+
+                let observacoes = (colObs !== -1 && row[colObs]) ? String(row[colObs]).trim() : '';
 
                 items.push({
                     id: id,
@@ -1625,7 +2148,8 @@
                     lng: lng !== null ? lng : -46.6333,
                     status: status,
                     news: news || (colNews !== -1 && row[colNews] ? String(row[colNews]).trim() : ''),
-                    sourceName: news ? 'Link da Fonte' : 'Sem Link'
+                    sourceName: news ? 'Link da Fonte' : 'Sem Link',
+                    observacoes: observacoes
                 });
             }
             return items;
@@ -1696,7 +2220,9 @@
         }
 
         let darkTileLayer, lightTileLayer;
-        let isMapLight = false;
+        // Padrão claro: lê melhor à luz do dia e combina com o restante do
+        // relatório impresso. O escuro fica disponível como opção no menu.
+        let isMapLight = true;
 
         function initMap() {
             const mapElement = document.getElementById('map');
@@ -1704,8 +2230,14 @@
 
             map = L.map('map', {
                 zoomControl: true,
-                scrollWheelZoom: true
-            }).setView([-23.5505, -46.6333], 6);
+                // A rolagem da página não deve ser sequestrada pelo mapa: o zoom
+                // exige Ctrl (ou pinça no toque), como no padrão de mapas embutidos.
+                scrollWheelZoom: false,
+                attributionControl: true
+            }).setView([-15.0, -50.0], 4);
+
+            map.on('click', () => map.scrollWheelZoom.enable());
+            map.on('mouseout', () => map.scrollWheelZoom.disable());
 
             darkTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
@@ -1719,7 +2251,8 @@
                 subdomains: 'abcd'
             });
 
-            darkTileLayer.addTo(map);
+            lightTileLayer.addTo(map);
+            updateMapThemeUI();
 
             renderMarkers(occurrences);
         }
@@ -1737,16 +2270,28 @@
                 darkTileLayer.addTo(map);
             }
 
+            updateMapThemeUI();
+        }
+
+        /** O rótulo descreve o estado atual do mapa, e o ícone indica a ação de alternar. */
+        function updateMapThemeUI() {
             const icon = document.getElementById('mapThemeIcon');
             const text = document.getElementById('mapThemeText');
             if (icon) icon.className = isMapLight ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-            if (text) text.textContent = isMapLight ? 'Mapa Escuro' : 'Mapa Claro';
+            if (text) text.textContent = isMapLight ? 'Mapa Claro' : 'Mapa Escuro';
         }
 
+        // Fonte única de verdade para status: cor, rótulo e peso de risco.
+        // Antes essa informação estava espalhada por getMarkerColor, getStatusBadge,
+        // a legenda e os filtros — cada um com seu próprio hex.
+        const STATUS_META = {
+            TOTAL:    { color: '#FF6B6B', tone: 'red',     label: 'Bloqueio total',   short: 'Total',    weight: 1 },
+            PARCIAL:  { color: '#F5B544', tone: 'amber',   label: 'Bloqueio parcial', short: 'Parcial',  weight: .5 },
+            LIBERADO: { color: '#3DD69C', tone: 'emerald', label: 'Via liberada',     short: 'Liberado', weight: 0 }
+        };
+
         function getMarkerColor(status) {
-            if (status === 'TOTAL') return '#EF4444';
-            if (status === 'PARCIAL') return '#F59E0B';
-            return '#10B981';
+            return (STATUS_META[status] || STATUS_META.LIBERADO).color;
         }
 
         function createCustomIcon(status) {
@@ -1765,15 +2310,11 @@
             });
         }
 
-        function renderMarkers(dataList) {
+        function renderMarkers(dataList, { refit = false } = {}) {
             if (!map) return;
 
             mapMarkers.forEach(m => map.removeLayer(m.marker));
             mapMarkers = [];
-
-            if (dataList.length > 0 && typeof dataList[0].lat === 'number' && typeof dataList[0].lng === 'number') {
-                map.setView([dataList[0].lat, dataList[0].lng], 6);
-            }
 
             dataList.forEach(item => {
                 if (typeof item.lat !== 'number' || typeof item.lng !== 'number' || isNaN(item.lat) || isNaN(item.lng)) return;
@@ -1781,24 +2322,40 @@
                 const icon = createCustomIcon(item.status);
                 const marker = L.marker([item.lat, item.lng], { icon }).addTo(map);
 
-                const statusLabel = item.status === 'TOTAL' ? '🔴 Bloqueio Total' : item.status === 'PARCIAL' ? '🟠 Bloqueio Parcial' : '🟢 Via Liberada';
+                const statusLabel = STATUS_META[item.status]?.label || 'Via Liberada';
+                const newsHref = safeURL(item.news);
 
                 const popupContent = `
-                    <div class="p-1 space-y-1.5 font-sans">
-                        <div class="flex items-center justify-between text-xs border-b border-slate-600 pb-1 gap-2">
-                            <span class="font-bold text-sky-400">${item.id}</span>
-                            <span class="font-semibold text-[10px] text-slate-300">${item.time}</span>
+                    <div class="map-popup">
+                        <div class="map-popup__head">
+                            <span class="map-popup__id">${escapeHTML(item.id)}</span>
+                            <span class="map-popup__time">${escapeHTML(item.time)}</span>
                         </div>
-                        <h4 class="font-bold text-white text-sm">${item.uf} - ${item.cidade}</h4>
-                        <p class="text-xs text-slate-300">${item.local}</p>
-                        <div class="text-xs font-semibold mt-1">${statusLabel}</div>
-                        ${item.news ? `<a href="${item.news}" target="_blank" class="inline-block mt-1 text-[11px] text-sky-400 hover:underline"><i class="fa-solid fa-arrow-up-right-from-square"></i> Ver Notícia</a>` : ''}
+                        <h4 class="map-popup__title">${escapeHTML(item.uf)} · ${escapeHTML(item.cidade)}</h4>
+                        <p class="map-popup__local">${escapeHTML(item.local)}</p>
+                        <div class="map-popup__status">${getStatusBadge(item.status)}</div>
+                        ${newsHref ? `<a href="${newsHref}" target="_blank" rel="noopener noreferrer" class="map-popup__link"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> Ver notícia</a>` : ''}
                     </div>
                 `;
 
                 marker.bindPopup(popupContent);
                 mapMarkers.push({ id: item.id, marker, data: item });
             });
+
+            // O enquadramento só muda quando o conjunto muda por ação explícita
+            // (filtro, primeira carga). Digitar na busca não rouba mais o zoom
+            // que o usuário ajustou à mão.
+            if (refit && mapMarkers.length > 0) {
+                const bounds = L.latLngBounds(mapMarkers.map(m => m.marker.getLatLng()));
+                if (mapMarkers.length === 1) {
+                    map.setView(bounds.getCenter(), 11, { animate: true });
+                } else {
+                    map.fitBounds(bounds, { padding: [56, 56], maxZoom: 12, animate: true });
+                }
+            }
+
+            const emptyEl = document.getElementById('mapEmptyState');
+            if (emptyEl) emptyEl.hidden = mapMarkers.length > 0;
         }
 
         function centerOnMap(lat, lng) {
@@ -1832,36 +2389,138 @@
         }
 
         function getStatusBadge(status) {
-            if (status === 'TOTAL') {
-                return `<span class="status-pill pill-red"><span class="dot animate-pulse"></span> Bloqueio Total</span>`;
-            } else if (status === 'PARCIAL') {
-                return `<span class="status-pill pill-amber"><span class="dot"></span> Parcial</span>`;
-            } else {
-                return `<span class="status-pill pill-emerald"><span class="dot"></span> Liberado</span>`;
+            const meta = STATUS_META[status] || STATUS_META.LIBERADO;
+            return `<span class="status-pill pill-${meta.tone}"><span class="dot"></span>${meta.short}</span>`;
+        }
+
+        /**
+         * Nome da fonte a partir do domínio. "Link da Fonte" repetido em cada
+         * linha não informava nada; o veículo que publicou, sim — e é derivado
+         * da própria URL, sem inventar dado.
+         */
+        function sourceLabel(item) {
+            const href = safeURL(item.news);
+            if (!href) return '';
+            try {
+                const host = new URL(href).hostname.replace(/^www\./, '');
+                const parts = host.split('.');
+                const name = parts.length > 2 && parts[1].length <= 3 ? parts[0] : parts[0];
+                return name.charAt(0).toUpperCase() + name.slice(1);
+            } catch {
+                return item.sourceName || 'Notícia';
             }
         }
 
-        function renderData() {
-            renderTableRows(occurrences);
-            renderMarkers(occurrences);
+        /** Coordenadas com precisão fixa: colunas numéricas alinham por vírgula. */
+        function formatCoord(value) {
+            const n = Number(value);
+            return Number.isFinite(n) ? n.toFixed(4) : '—';
+        }
+
+        function renderData({ refit = false } = {}) {
+            applyView({ refit });
             updateStats();
+            updateRiskAssessment();
+        }
+
+        function getStatusCounts() {
+            const counts = { TOTAL: 0, PARCIAL: 0, LIBERADO: 0 };
+            occurrences.forEach(item => {
+                if (counts[item.status] !== undefined) counts[item.status]++;
+            });
+            return counts;
         }
 
         function updateStats() {
-            let countTotal = 0;
-            let countPartial = 0;
-            let countCleared = 0;
+            const counts = getStatusCounts();
+            const total = occurrences.length;
 
-            occurrences.forEach(item => {
-                if (item.status === 'TOTAL') countTotal++;
-                if (item.status === 'PARCIAL') countPartial++;
-                if (item.status === 'LIBERADO') countCleared++;
-            });
+            animateStatValue(document.getElementById('statTotal'), total);
+            animateStatValue(document.getElementById('statTotalBlocked'), counts.TOTAL);
+            animateStatValue(document.getElementById('statPartialBlocked'), counts.PARCIAL);
+            animateStatValue(document.getElementById('statCleared'), counts.LIBERADO);
 
-            animateStatValue(document.getElementById('statTotal'), occurrences.length);
-            animateStatValue(document.getElementById('statTotalBlocked'), countTotal);
-            animateStatValue(document.getElementById('statPartialBlocked'), countPartial);
-            animateStatValue(document.getElementById('statCleared'), countCleared);
+            // Cada indicador ganha proporção sobre o total — quatro números soltos não
+            // diziam "quanto da operação está comprometida". A proporção é derivada
+            // dos mesmos dados, sem inventar métrica nova.
+            setShare('shareTotalBlocked', counts.TOTAL, total);
+            setShare('sharePartialBlocked', counts.PARCIAL, total);
+            setShare('shareCleared', counts.LIBERADO, total);
+
+            // Barra de composição: uma leitura da operação inteira em uma linha.
+            const bar = document.getElementById('compositionBar');
+            if (bar && total > 0) {
+                bar.querySelector('[data-seg="TOTAL"]').style.inlineSize = `${(counts.TOTAL / total) * 100}%`;
+                bar.querySelector('[data-seg="PARCIAL"]').style.inlineSize = `${(counts.PARCIAL / total) * 100}%`;
+                bar.querySelector('[data-seg="LIBERADO"]').style.inlineSize = `${(counts.LIBERADO / total) * 100}%`;
+                bar.setAttribute('aria-label',
+                    `Composição: ${counts.TOTAL} bloqueio total, ${counts.PARCIAL} parcial, ${counts.LIBERADO} liberado, de ${total} pontos.`);
+            }
+        }
+
+        function setShare(elementId, value, total) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            if (!total) { el.textContent = '—'; return; }
+            const pct = Math.round((value / total) * 100);
+            el.textContent = `${pct}% do total`;
+        }
+
+        /**
+         * O medidor de risco agora é derivado das ocorrências reais.
+         * Antes o ponteiro era rotate(15) fixo no HTML: dizia "moderado" mesmo se
+         * todos os pontos fossem bloqueio total. O índice pondera cada status
+         * (total = 1, parcial = 0,5, liberado = 0) sobre o número de pontos.
+         */
+        function updateRiskAssessment() {
+            const total = occurrences.length;
+            const needle = document.getElementById('riskNeedle');
+            const levelEl = document.getElementById('riskLevel');
+            const pillEl = document.getElementById('riskPill');
+            const descEl = document.getElementById('riskDescription');
+            const basisEl = document.getElementById('riskBasis');
+            if (!needle) return;
+
+            if (total === 0) {
+                needle.style.transform = 'rotate(-90deg)';
+                if (levelEl) levelEl.textContent = 'Sem dados';
+                if (pillEl) { pillEl.textContent = 'AGUARDANDO'; pillEl.className = 'status-pill pill-neutral'; }
+                if (descEl) descEl.textContent = 'Nenhum ponto monitorado na base neste momento.';
+                if (basisEl) basisEl.textContent = '';
+                return;
+            }
+
+            const counts = getStatusCounts();
+            const score = (counts.TOTAL * STATUS_META.TOTAL.weight
+                         + counts.PARCIAL * STATUS_META.PARCIAL.weight) / total;
+
+            // -90° = sem risco, +90° = risco máximo.
+            needle.style.transform = `rotate(${(score * 180) - 90}deg)`;
+
+            let level, tone, description;
+            if (score >= .6) {
+                level = 'Risco alto';
+                tone = 'red';
+                description = 'Predominância de bloqueios totais nos pontos monitorados. Impacto direto em janelas de coleta e entrega.';
+            } else if (score >= .25) {
+                level = 'Risco moderado';
+                tone = 'amber';
+                description = 'Potencial de lentidão em acessos portuários e retenção pontual de frotas rodoviárias.';
+            } else {
+                level = 'Risco baixo';
+                tone = 'emerald';
+                description = 'Maioria dos pontos com tráfego fluindo. Manter monitoramento de rotina.';
+            }
+
+            if (levelEl) levelEl.textContent = level;
+            if (pillEl) {
+                pillEl.textContent = level.toUpperCase();
+                pillEl.className = `status-pill pill-${tone}`;
+            }
+            if (descEl) descEl.textContent = description;
+            if (basisEl) {
+                basisEl.textContent = `Índice ${(score * 100).toFixed(0)}/100 · calculado sobre ${total} ${total === 1 ? 'ponto monitorado' : 'pontos monitorados'}`;
+            }
         }
 
         function renderTableRows(itemsToRender) {
@@ -1870,10 +2529,36 @@
             tbody.innerHTML = '';
 
             if (itemsToRender.length === 0) {
+                // Três vazios diferentes, três mensagens diferentes. Antes, uma busca
+                // sem resultados mostrava um spinner de "carregando" que nunca terminava.
+                const isFiltered = view.status !== 'ALL' || view.term.trim() !== '';
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td colspan="7" class="px-4 py-8 text-center text-slate-400 font-semibold">
-                    <i class="fa-solid fa-spinner animate-spin text-sky-400 text-lg mr-2"></i> Carregando registros da planilha...
-                </td>`;
+
+                if (hasLoaded && isFiltered) {
+                    tr.innerHTML = `<td colspan="8">
+                        <div class="table-empty">
+                            <i class="fa-solid fa-filter-circle-xmark table-empty__icon" aria-hidden="true"></i>
+                            <p class="table-empty__title">Nenhum registro corresponde a este filtro</p>
+                            <p class="table-empty__hint">Ajuste os critérios para ver outras ocorrências.</p>
+                            <button type="button" class="table-empty__action" onclick="clearFilters()">Limpar filtros</button>
+                        </div>
+                    </td>`;
+                } else if (hasLoaded) {
+                    tr.innerHTML = `<td colspan="8">
+                        <div class="table-empty">
+                            <i class="fa-solid fa-circle-check table-empty__icon is-ok" aria-hidden="true"></i>
+                            <p class="table-empty__title">Nenhuma ocorrência registrada</p>
+                            <p class="table-empty__hint">Nenhum bloqueio ativo na base neste momento.</p>
+                        </div>
+                    </td>`;
+                } else {
+                    tr.innerHTML = `<td colspan="8">
+                        <div class="table-empty">
+                            <span class="table-empty__spinner" aria-hidden="true"></span>
+                            <p class="table-empty__title">Carregando registros da planilha…</p>
+                        </div>
+                    </td>`;
+                }
                 tbody.appendChild(tr);
                 return;
             }
@@ -1883,36 +2568,39 @@
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-navy-800/50 transition-colors table-row-enter";
                 tr.style.animationDelay = `${Math.min(rowIndex * 42, 420)}ms`;
+                const newsHref = safeURL(item.news);
+                const label = `${item.uf} · ${item.cidade}`;
+
                 tr.innerHTML = `
-                    <td class="px-4 py-3 font-semibold text-white">
-                        <div>${item.id}</div>
-                        <div class="text-[10px] text-slate-400 font-normal">${item.time}</div>
+                    <td class="cell-id" data-label="Registro">
+                        <span class="cell-id__code">${escapeHTML(item.id)}</span>
+                        <span class="cell-id__time">${escapeHTML(item.time)}</span>
                     </td>
-                    <td class="px-4 py-3 font-bold text-sky-300">
-                        ${item.uf} - ${item.cidade}
+                    <td class="cell-place" data-label="UF / Cidade">
+                        <span class="cell-place__uf">${escapeHTML(item.uf)}</span>
+                        <span class="cell-place__city">${escapeHTML(item.cidade)}</span>
                     </td>
-                    <td class="px-4 py-3 text-slate-200">
-                        ${item.local}
+                    <td class="cell-local" data-label="Local">${escapeHTML(item.local)}</td>
+                    <td class="cell-coords" data-label="Coordenadas">${escapeHTML(formatCoord(item.lat))}, ${escapeHTML(formatCoord(item.lng))}</td>
+                    <td class="cell-status" data-label="Status">${getStatusBadge(item.status)}</td>
+                    <td class="cell-source" data-label="Fonte">
+                        ${newsHref
+                            ? `<a href="${newsHref}" target="_blank" rel="noopener noreferrer" class="source-link"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>${escapeHTML(sourceLabel(item))}</a>`
+                            : `<span class="cell-source__empty">Sem fonte</span>`}
                     </td>
-                    <td class="px-4 py-3 font-mono text-[11px] text-slate-400">
-                        ${item.lat}, ${item.lng}
+                    <td class="cell-obs" data-label="Observações">
+                        ${item.observacoes ? escapeHTML(item.observacoes) : `<span class="cell-source__empty">—</span>`}
                     </td>
-                    <td class="px-4 py-3 text-center">
-                        ${getStatusBadge(item.status)}
-                    </td>
-                    <td class="px-4 py-3">
-                        ${item.news ? `<a href="${item.news}" target="_blank" class="text-sky-400 hover:underline flex items-center gap-1 font-semibold"><i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> ${item.sourceName || 'Notícia'}</a>` : '<span class="text-slate-500">Sem fonte</span>'}
-                    </td>
-                    <td class="px-4 py-3 text-right no-print">
-                        <div class="inline-flex items-center gap-1">
-                            <button onclick="centerOnMap(${item.lat}, ${item.lng})" class="row-icon-btn text-sky-400 hover:bg-sky-500/15" title="Ver no Mapa">
-                                <i class="fa-solid fa-location-crosshairs text-xs"></i>
+                    <td class="cell-actions no-print" data-label="Ações">
+                        <div class="row-actions">
+                            <button type="button" onclick="centerOnMap(${item.lat}, ${item.lng})" class="row-icon-btn tone-sky" aria-label="Ver ${escapeHTML(label)} no mapa">
+                                <i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i>
                             </button>
-                            <button onclick="checkAdminAction(() => openEditModal(${index}))" class="row-icon-btn text-amber-400 hover:bg-amber-500/15" title="Editar Ocorrência">
-                                <i class="fa-solid fa-pen-to-square text-xs"></i>
+                            <button type="button" onclick="checkAdminAction(() => openEditModal(${index}))" class="row-icon-btn tone-amber" aria-label="Editar registro ${escapeHTML(item.id)}">
+                                <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
                             </button>
-                            <button onclick="checkAdminAction(() => deleteOccurrence('${item.id}'))" class="row-icon-btn text-red-400 hover:bg-red-500/15" title="Excluir da Planilha">
-                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            <button type="button" onclick="checkAdminAction(() => deleteOccurrence('${escapeHTML(item.id)}'))" class="row-icon-btn tone-red" aria-label="Excluir registro ${escapeHTML(item.id)}">
+                                <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
                             </button>
                         </div>
                     </td>
@@ -1921,39 +2609,80 @@
             });
         }
 
-        function filterMap(statusFilter) {
-            const btnAll = document.getElementById('btnFilterAll');
-            const btnTotal = document.getElementById('btnFilterTotal');
-            const btnParcial = document.getElementById('btnFilterParcial');
-            const btnLiberado = document.getElementById('btnFilterLiberado');
+        // ---- Estado de visualização unificado ----------------------------------
+        // Antes, filterMap e filterTable se anulavam: escolher "Totais" descartava a
+        // busca, e digitar na busca descartava o status. Agora existe um único estado
+        // e uma única função que o aplica, então os dois critérios se compõem.
+        const view = { status: 'ALL', term: '' };
 
-            [btnAll, btnTotal, btnParcial, btnLiberado].forEach(btn => {
-                if (btn) btn.classList.remove('is-active');
+        function getVisibleOccurrences() {
+            const term = view.term.trim().toLowerCase();
+            return occurrences.filter(item => {
+                if (view.status !== 'ALL' && item.status !== view.status) return false;
+                if (!term) return true;
+                return [item.id, item.uf, item.cidade, item.local, item.sourceName, item.observacoes]
+                    .some(field => String(field || '').toLowerCase().includes(term));
             });
+        }
 
-            if (statusFilter === 'ALL' && btnAll) btnAll.classList.add('is-active');
-            if (statusFilter === 'TOTAL' && btnTotal) btnTotal.classList.add('is-active');
-            if (statusFilter === 'PARCIAL' && btnParcial) btnParcial.classList.add('is-active');
-            if (statusFilter === 'LIBERADO' && btnLiberado) btnLiberado.classList.add('is-active');
+        function applyView({ refit = false } = {}) {
+            const visible = getVisibleOccurrences();
+            renderTableRows(visible);
+            renderMarkers(visible, { refit });
+            updateFilterSummary(visible);
 
-            const filtered = statusFilter === 'ALL' ? occurrences : occurrences.filter(o => o.status === statusFilter);
-            renderTableRows(filtered);
-            renderMarkers(filtered);
+            document.querySelectorAll('[data-status-filter]').forEach(btn => {
+                const isActive = btn.dataset.statusFilter === view.status;
+                btn.classList.toggle('is-active', isActive);
+                btn.setAttribute('aria-pressed', String(isActive));
+            });
+        }
+
+        /** Diz ao usuário o que está filtrado e qual foi o impacto nos dados. */
+        function updateFilterSummary(visible) {
+            const targets = ['filterSummary', 'filterSummaryTable']
+                .map(id => document.getElementById(id))
+                .filter(Boolean);
+            if (!targets.length) return;
+
+            const total = occurrences.length;
+            const shown = visible.length;
+            const isFiltered = view.status !== 'ALL' || view.term.trim() !== '';
+
+            if (!isFiltered) {
+                targets.forEach(el => { el.hidden = true; });
+                return;
+            }
+
+            const parts = [];
+            if (view.status !== 'ALL') parts.push(STATUS_META[view.status]?.label.toLowerCase());
+            if (view.term.trim()) parts.push(`“${view.term.trim()}”`);
+
+            const markup = `
+                <span class="filter-summary__count">${shown} de ${total}</span>
+                <span class="filter-summary__desc">filtrando por ${parts.map(escapeHTML).join(' · ')}</span>
+                <button type="button" class="filter-summary__clear" onclick="clearFilters()">Limpar</button>
+            `;
+            targets.forEach(el => { el.hidden = false; el.innerHTML = markup; });
+        }
+
+        function clearFilters() {
+            view.status = 'ALL';
+            view.term = '';
+            const input = document.getElementById('searchInput');
+            if (input) input.value = '';
+            applyView({ refit: true });
+        }
+
+        function filterMap(statusFilter) {
+            // Clicar de novo no filtro ativo volta para "Todos".
+            view.status = (view.status === statusFilter && statusFilter !== 'ALL') ? 'ALL' : statusFilter;
+            applyView({ refit: true });
         }
 
         function filterTable() {
-            const term = (document.getElementById('searchInput')?.value || '').toLowerCase();
-            const filtered = occurrences.filter(item => {
-                return (
-                    item.id.toLowerCase().includes(term) ||
-                    item.uf.toLowerCase().includes(term) ||
-                    item.cidade.toLowerCase().includes(term) ||
-                    item.local.toLowerCase().includes(term) ||
-                    (item.sourceName && item.sourceName.toLowerCase().includes(term))
-                );
-            });
-            renderTableRows(filtered);
-            renderMarkers(filtered);
+            view.term = document.getElementById('searchInput')?.value || '';
+            applyView();
         }
 
         function toggleAdminAuth() {
@@ -1974,32 +2703,120 @@
             }
         }
 
+        // ---- Comportamento de diálogo -----------------------------------------
+        // Os modais eram apenas divs escondidas: sem Esc, sem foco preso, sem
+        // devolver o foco a quem os abriu. Um usuário de teclado ficava preso
+        // navegando a página inteira por trás do overlay.
+        const modalStack = [];
+
+        const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+        function openModal(id, firstFocusId) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            modalStack.push({ id, restoreTo: document.activeElement });
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            requestAnimationFrame(() => {
+                const first = firstFocusId ? document.getElementById(firstFocusId) : null;
+                (first || modal.querySelector(FOCUSABLE))?.focus();
+            });
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            modal.classList.add('hidden');
+            const index = modalStack.findIndex(entry => entry.id === id);
+            const entry = index !== -1 ? modalStack.splice(index, 1)[0] : null;
+            if (!modalStack.length) document.body.style.overflow = '';
+            entry?.restoreTo?.focus?.();
+        }
+
+        document.addEventListener('keydown', event => {
+            if (!modalStack.length) return;
+            const top = modalStack[modalStack.length - 1];
+            const modal = document.getElementById(top.id);
+            if (!modal) return;
+
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                if (top.id === 'authModal') closeAuthModal();
+                else closeModal(top.id);
+                return;
+            }
+
+            if (event.key !== 'Tab') return;
+
+            // Foco preso: Tab circula apenas dentro do diálogo aberto.
+            const items = [...modal.querySelectorAll(FOCUSABLE)].filter(el => el.offsetParent !== null);
+            if (!items.length) return;
+            const first = items[0];
+            const last = items[items.length - 1];
+
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        });
+
+        // Clicar no fundo escuro fecha o diálogo.
+        ['addModal', 'authModal'].forEach(id => {
+            document.getElementById(id)?.addEventListener('mousedown', event => {
+                if (event.target.id !== id) return;
+                if (id === 'authModal') closeAuthModal();
+                else closeModal(id);
+            });
+        });
+
         function openAuthModal() {
             const input = document.getElementById('adminPinInput');
-            if (input) input.value = '';
+            if (input) {
+                input.value = '';
+                input.removeAttribute('aria-invalid');
+            }
             document.getElementById('authErrorMessage')?.classList.add('hidden');
-            document.getElementById('authModal')?.classList.remove('hidden');
-            setTimeout(() => input?.focus(), 100);
+            openModal('authModal', 'adminPinInput');
         }
 
         function closeAuthModal() {
-            document.getElementById('authModal')?.classList.add('hidden');
+            closeModal('authModal');
             pendingAdminAction = null;
         }
 
-        function submitAdminAuth() {
-            const inputPin = document.getElementById('adminPinInput')?.value;
-            if (inputPin === ADMIN_PIN) {
-                isAdmin = true;
-                updateAdminUI();
-                closeAuthModal();
-                if (pendingAdminAction) {
-                    const action = pendingAdminAction;
-                    pendingAdminAction = null;
-                    action();
+        async function submitAdminAuth() {
+            const input = document.getElementById('adminPinInput');
+            const errorEl = document.getElementById('authErrorMessage');
+            const pin = input?.value || '';
+
+            let matches = false;
+            try {
+                matches = (await hashPin(pin)) === ADMIN_PIN_HASH;
+            } catch {
+                matches = false;
+            }
+
+            if (!matches) {
+                errorEl?.classList.remove('hidden');
+                if (input) {
+                    input.value = '';
+                    input.setAttribute('aria-invalid', 'true');
+                    input.focus();
                 }
-            } else {
-                document.getElementById('authErrorMessage')?.classList.remove('hidden');
+                return;
+            }
+
+            isAdmin = true;
+            input?.removeAttribute('aria-invalid');
+            updateAdminUI();
+            closeAuthModal();
+            if (pendingAdminAction) {
+                const action = pendingAdminAction;
+                pendingAdminAction = null;
+                action();
             }
         }
 
@@ -2066,16 +2883,16 @@
 
         function openAddModal() { 
             document.getElementById('editIndex').value = "-1";
-            document.getElementById('modalTitle').innerHTML = `<span class="icon-chip sm"><i class="fa-solid fa-location-dot"></i></span> Cadastrar Nova Ocorrência`;
+            document.getElementById('modalTitle').textContent = 'Cadastrar nova ocorrência';
             document.getElementById('addForm').reset();
-            
+
             const inputID = document.getElementById('inputID');
             if (inputID) {
                 inputID.value = generateNextID();
                 inputID.readOnly = true;
             }
 
-            document.getElementById('addModal').classList.remove('hidden'); 
+            openModal('addModal', 'inputStatus');
         }
 
         function openEditModal(index) {
@@ -2083,8 +2900,8 @@
             if (!item) return;
 
             document.getElementById('editIndex').value = index;
-            document.getElementById('modalTitle').innerHTML = `<span class="icon-chip sm tone-amber"><i class="fa-solid fa-pen-to-square"></i></span> Editar Ocorrência (${item.id})`;
-            
+            document.getElementById('modalTitle').textContent = `Editar ocorrência ${item.id}`;
+
             const inputID = document.getElementById('inputID');
             if (inputID) {
                 inputID.value = item.id;
@@ -2098,11 +2915,12 @@
             document.getElementById('inputLng').value = item.lng;
             document.getElementById('inputStatus').value = item.status;
             document.getElementById('inputNews').value = item.news || '';
+            document.getElementById('inputObs').value = item.observacoes || '';
 
-            document.getElementById('addModal').classList.remove('hidden');
+            openModal('addModal', 'inputStatus');
         }
 
-        function closeAddModal() { document.getElementById('addModal')?.classList.add('hidden'); }
+        function closeAddModal() { closeModal('addModal'); }
 
         function handleSaveOccurrence(e) {
             e.preventDefault();
@@ -2119,7 +2937,8 @@
                 lat: parseFloat(document.getElementById('inputLat').value),
                 lng: parseFloat(document.getElementById('inputLng').value),
                 status: document.getElementById('inputStatus').value,
-                news: document.getElementById('inputNews').value
+                news: document.getElementById('inputNews').value,
+                observacoes: document.getElementById('inputObs').value
             };
 
             if (editIndex >= 0 && editIndex < occurrences.length) {
@@ -2198,93 +3017,34 @@
             const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
             root.classList.add('motion-enabled');
 
-            function splitTitleIntoCharacters(title) {
-                if (!title || title.classList.contains('is-split')) return;
-                const accessibleLabel = title.textContent.replace(/\s+/g, ' ').trim();
-                title.setAttribute('aria-label', accessibleLabel);
-                let charIndex = 0;
-
-                function processNode(node) {
-                    Array.from(node.childNodes).forEach(child => {
-                        if (child.nodeType === Node.TEXT_NODE) {
-                            const fragment = document.createDocumentFragment();
-                            const tokens = child.nodeValue.match(/\S+|\s+/g) || [];
-
-                            tokens.forEach(token => {
-                                if (/^\s+$/.test(token)) {
-                                    fragment.appendChild(document.createTextNode(token));
-                                    return;
-                                }
-
-                                const word = document.createElement('span');
-                                word.className = 'word-mask';
-                                word.setAttribute('aria-hidden', 'true');
-
-                                Array.from(token).forEach(character => {
-                                    const mask = document.createElement('span');
-                                    mask.className = 'char-mask';
-
-                                    const glyph = document.createElement('span');
-                                    glyph.className = 'char-rise';
-                                    glyph.style.setProperty('--char-index', charIndex++);
-                                    glyph.textContent = character;
-                                    mask.appendChild(glyph);
-                                    word.appendChild(mask);
-                                });
-
-                                fragment.appendChild(word);
-                            });
-                            child.replaceWith(fragment);
-                        } else if (child.nodeType === Node.ELEMENT_NODE) {
-                            processNode(child);
-                        }
-                    });
-                }
-
-                processNode(title);
-                title.classList.add('is-split');
-            }
-
             const hero = document.querySelector('.apisul-hero');
-            const title = document.querySelector('.hero-title');
-            splitTitleIntoCharacters(title);
 
-            const heroButtons = title?.parentElement?.querySelector('.mt-8.flex');
+            const heroButtons = document.querySelector('.hero-title')?.parentElement?.querySelector('.mt-8.flex');
             if (heroButtons) heroButtons.classList.add('hero-actions');
 
-            // Marcação automática para revelação progressiva e brilho nos cartões.
+            // Marcação automática para revelação progressiva e luz nos painéis.
             const revealTargets = [];
             document.querySelectorAll('main > :not(#overview)').forEach((element, index) => {
                 element.classList.add('reveal-on-scroll');
-                element.style.setProperty('--reveal-delay', `${Math.min((index % 4) * 55, 165)}ms`);
+                element.style.setProperty('--reveal-delay', `${Math.min((index % 3) * 45, 90)}ms`);
                 revealTargets.push(element);
             });
 
-            document.querySelectorAll('main > .grid:first-of-type > div').forEach((element, index) => {
-                element.classList.add('reveal-on-scroll', 'motion-card');
-                element.style.setProperty('--reveal-delay', `${index * 80}ms`);
-                revealTargets.push(element);
-            });
-
-            document.querySelectorAll('main .bg-navy-900, main .bg-navy-850, .hero-side-card').forEach(element => {
+            document.querySelectorAll('main .panel, .status-panel, .hero-side-card').forEach(element => {
                 element.classList.add('motion-card');
             });
 
-            document.querySelectorAll('main h2').forEach(heading => heading.classList.add('section-heading-motion'));
-
-            const uniqueTargets = [...new Set(revealTargets)];
             if ('IntersectionObserver' in window && !reduceMotion) {
                 const observer = new IntersectionObserver(entries => {
                     entries.forEach(entry => {
                         if (!entry.isIntersecting) return;
                         entry.target.classList.add('is-visible');
-                        entry.target.querySelectorAll('.section-heading-motion').forEach(h => h.classList.add('heading-visible'));
                         observer.unobserve(entry.target);
                     });
-                }, { threshold: .12, rootMargin: '0px 0px -8% 0px' });
-                uniqueTargets.forEach(target => observer.observe(target));
+                }, { threshold: .08, rootMargin: '0px 0px -6% 0px' });
+                revealTargets.forEach(target => observer.observe(target));
             } else {
-                uniqueTargets.forEach(target => target.classList.add('is-visible'));
+                revealTargets.forEach(target => target.classList.add('is-visible'));
             }
 
             // Parallax leve no hero: responde ao ponteiro, mas não interfere em touch/reduced-motion.
@@ -2333,9 +3093,9 @@
             function updateScrollEffects() {
                 const scrollTop = window.scrollY || document.documentElement.scrollTop;
                 const scrollable = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
-                const progress = Math.min((scrollTop / scrollable) * 100, 100);
+                const progress = Math.min(scrollTop / scrollable, 1);
                 if (header) {
-                    header.style.setProperty('--scroll-progress', `${progress}%`);
+                    header.style.setProperty('--scroll-progress', progress.toFixed(4));
                     header.classList.toggle('header-scrolled', scrollTop > 24);
                 }
                 scrollFrame = null;
