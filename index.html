@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -356,6 +356,7 @@
         }
 
         /* ---- Impressão: o relatório precisa sair legível em papel ---- */
+
         @media print {
             body { background: #fff !important; color: #000 !important; }
             body::before, .hero-flow-lines, .map-legend { display: none !important; }
@@ -1530,20 +1531,18 @@
     </style>
 
     <script>
-        /* Aplica o tema salvo (ou a preferência do sistema) antes da pintura,
-           evitando flash de tema. O toggle completo vive no script principal. */
+        /* O <html> já nasce com class="light" (padrão do site). Aqui só
+           trocamos para escuro se essa for a preferência salva do
+           visitante — evita flash de tema. Toggle completo no script principal. */
         (function () {
             try {
-                var pref = localStorage.getItem('apisul-site-theme');
-                if (!pref) {
-                    pref = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-                }
+                var pref = localStorage.getItem('apisul-site-theme') || 'light';
                 var root = document.documentElement;
-                if (pref === 'light') {
-                    root.classList.add('light');
-                    root.classList.remove('dark');
+                if (pref === 'dark') {
+                    root.classList.add('dark');
+                    root.classList.remove('light');
                 }
-            } catch (e) { /* localStorage indisponível: mantém o tema escuro padrão */ }
+            } catch (e) { /* localStorage indisponível: mantém o tema claro padrão */ }
         })();
     </script>
 </head>
@@ -1567,7 +1566,6 @@
                 <div id="headerActions" class="hidden lg:flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-5 w-full lg:w-auto pb-4 lg:pb-0">
                     <nav class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-5 lg:gap-6" aria-label="Navegação principal">
                         <a class="apisul-nav-link" href="#overview">Visão Geral</a>
-                        <a class="apisul-nav-link" href="#analise">Análise</a>
                         <a class="apisul-nav-link" href="#mapa-operacional">Mapa</a>
                         <a class="apisul-nav-link" href="#registros">Registros</a>
                     </nav>
@@ -1611,6 +1609,13 @@
                                 <button onclick="closeControlsMenu(); checkAdminAction(() => openAddModal());" class="accent-button font-bold px-3 py-2.5 rounded-lg text-[11px] flex items-center gap-2 transition-all w-full">
                                     <i class="fa-solid fa-plus"></i><span>Novo Bloqueio</span>
                                 </button>
+
+                                <!-- Atualizar imagem de análise climática (grava direto no GitHub) -->
+                                <button onclick="checkAdminAction(() => document.getElementById('climateImageInput').click());" id="climateImageUploadBtn" class="outline-button px-3 py-2 rounded-lg text-[11px] font-semibold flex items-center gap-2 transition-all w-full" title="Enviar nova imagem de análise climática">
+                                    <span class="icon-chip sm tone-indigo" style="width:22px;height:22px;font-size:.62rem;"><i class="fa-solid fa-image"></i></span>
+                                    <span id="climateImageUploadText" class="text-indigo-200 font-bold">Atualizar Imagem</span>
+                                </button>
+                                <input type="file" id="climateImageInput" accept="image/png,image/jpeg,image/webp" style="display:none">
 
                                 <!-- Tema do site -->
                                 <button onclick="toggleSiteTheme()" id="siteThemeToggleBtn" class="outline-button px-3 py-2 rounded-lg text-[11px] font-semibold flex items-center gap-2 transition-all w-full" title="Alternar site claro/escuro">
@@ -1806,8 +1811,8 @@
 
 
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6" style="display: none;">
+
             <!-- Contextualização -->
             <div id="analise" class="panel lg:col-span-7 flex flex-col justify-between">
                 <div>
@@ -1883,8 +1888,13 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
+        <!-- Seção com Análise Climática -->
+        <section class="panel" style="margin-top: 48px; padding: 0; overflow: hidden;">
+            <img src="assets/imagens/relatorio.jpeg" style="display: block; width: 100%; max-width: 100%;" alt="Análise climática Brasil">
+        </section>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6" style="display: none;">
+
             <!-- Cenários Prospectivos -->
             <div class="panel lg:col-span-6">
                 <div class="panel-head">
@@ -2064,6 +2074,11 @@
         const SPREADSHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv`;
         const APPS_SCRIPT_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycby1D5ugpVfbOKUsYsk0l7KitynQ7in2GYtKlw21zj0shUe0TgeMcNNaGhWlZkQCW_CV/exec';
 
+        // Apps Script isolado (novo projeto, sem relação com a planilha) que recebe
+        // a imagem em base64 e a grava no repositório via API do GitHub.
+        // Troque pela URL /exec do seu Apps Script depois de implantá-lo.
+        const CLIMATE_IMAGE_UPLOAD_URL = 'COLE_AQUI_A_URL_DO_APPS_SCRIPT_DE_UPLOAD';
+
         // Pre-loaded single seed item matching Google Sheet structure to display immediately on initial load
         let occurrences = [
             {
@@ -2085,6 +2100,9 @@
         let mapMarkers = [];
         let isAdmin = false;
         let pendingAdminAction = null;
+        // PIN em texto puro, só em memória (nunca salvo), usado para autorizar o
+        // upload de imagem no Apps Script isolado. Some ao trancar o Modo Edição.
+        let adminPinPlain = '';
         let pollInterval = null;
         // Distingue "ainda carregando" de "carregou e está vazio" — os dois vazios
         // precisam de mensagens diferentes na tabela.
@@ -2914,6 +2932,7 @@
         function toggleAdminAuth() {
             if (isAdmin) {
                 isAdmin = false;
+                adminPinPlain = '';
                 updateAdminUI();
             } else {
                 openAuthModal();
@@ -3036,6 +3055,7 @@
             }
 
             isAdmin = true;
+            adminPinPlain = pin;
             input?.removeAttribute('aria-invalid');
             updateAdminUI();
             closeAuthModal();
@@ -3060,6 +3080,107 @@
                 if (icon) icon.className = "fa-solid fa-lock text-amber-400";
                 if (btn) btn.classList.remove("border-emerald-500/50");
             }
+        }
+
+        /* ---- Upload da imagem de Análise Climática -------------------------
+           Fluxo: seleciona arquivo -> redimensiona/converte para JPEG no
+           próprio navegador (Canvas) -> envia em base64 para um Apps Script
+           isolado (sem relação com a planilha), que grava sempre no mesmo
+           caminho (assets/imagens/relatorio.jpeg) via API do GitHub. */
+        document.getElementById('climateImageInput')?.addEventListener('change', handleClimateImageSelect);
+
+        async function handleClimateImageSelect(event) {
+            const input = event.target;
+            const file = input.files && input.files[0];
+            input.value = ''; // permite selecionar o mesmo arquivo de novo depois
+
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                alert('Selecione um arquivo de imagem (PNG, JPEG ou WEBP).');
+                return;
+            }
+
+            setClimateUploadStatus('Otimizando imagem…', true);
+            try {
+                const dataUrl = await resizeAndCompressImage(file, 1600, 0.85);
+                setClimateUploadStatus('Enviando imagem…', true);
+                await uploadClimateImage(dataUrl);
+                setClimateUploadStatus('Imagem enviada! O site atualiza em ~1 min.', false);
+                setTimeout(() => setClimateUploadStatus('Atualizar Imagem', false), 6000);
+            } catch (err) {
+                console.error('Falha ao enviar imagem de análise climática:', err);
+                setClimateUploadStatus('Atualizar Imagem', false);
+                alert('Não foi possível enviar a imagem: ' + (err?.message || 'erro desconhecido'));
+            }
+        }
+
+        function setClimateUploadStatus(text, disabled) {
+            const label = document.getElementById('climateImageUploadText');
+            const btn = document.getElementById('climateImageUploadBtn');
+            if (label) label.textContent = text;
+            if (btn) btn.disabled = disabled;
+        }
+
+        /** Redimensiona (largura máxima) e converte qualquer imagem para JPEG,
+         *  sempre no mesmo formato/qualidade, independente do arquivo de origem. */
+        function resizeAndCompressImage(file, maxWidth, quality) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = () => reject(new Error('Falha ao ler o arquivo.'));
+                reader.onload = () => {
+                    const img = new Image();
+                    img.onerror = () => reject(new Error('Arquivo não é uma imagem válida.'));
+                    img.onload = () => {
+                        const scale = Math.min(1, maxWidth / img.width);
+                        const w = Math.round(img.width * scale);
+                        const h = Math.round(img.height * scale);
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        // Fundo branco: PNGs com transparência não podem virar
+                        // JPEG com fundo preto por padrão.
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.fillRect(0, 0, w, h);
+                        ctx.drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.src = reader.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        /** Envia a imagem para o Apps Script isolado, que autentica o PIN e
+         *  grava o arquivo no GitHub. Content-Type text/plain evita o preflight
+         *  CORS (que o Apps Script não responde), permitindo ler a resposta. */
+        async function uploadClimateImage(dataUrl) {
+            if (!CLIMATE_IMAGE_UPLOAD_URL || CLIMATE_IMAGE_UPLOAD_URL.startsWith('COLE_AQUI')) {
+                throw new Error('URL do Apps Script de upload ainda não foi configurada.');
+            }
+
+            const res = await fetch(CLIMATE_IMAGE_UPLOAD_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({
+                    action: 'uploadClimateImage',
+                    pin: adminPinPlain,
+                    filename: 'relatorio.jpeg',
+                    imageBase64: dataUrl
+                })
+            });
+
+            let data;
+            try {
+                data = await res.json();
+            } catch {
+                throw new Error('Resposta inesperada do servidor de upload.');
+            }
+
+            if (!data || data.status !== 'success') {
+                throw new Error(data?.message || 'Falha ao gravar a imagem no GitHub.');
+            }
+            return data;
         }
 
         function sendToGoogleSheets(actionType, payloadData) {
