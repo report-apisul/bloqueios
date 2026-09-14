@@ -3163,10 +3163,16 @@
                 throw new Error('URL do Apps Script de upload ainda não foi configurada.');
             }
 
+            // Sem timeout, um fetch travado na rede deixaria o botão preso em
+            // "Enviando imagem..." para sempre, sem nunca cair na retentativa.
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 25000);
+
             try {
                 const res = await fetch(CLIMATE_IMAGE_UPLOAD_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    signal: controller.signal,
                     body: JSON.stringify({
                         action: 'uploadClimateImage',
                         pin: adminPinPlain,
@@ -3191,7 +3197,11 @@
                     await new Promise(resolve => setTimeout(resolve, 1800 * attempt));
                     return uploadClimateImage(dataUrl, attempt + 1);
                 }
-                throw err;
+                throw (err.name === 'AbortError')
+                    ? new Error('O envio demorou demais e foi cancelado. Tente novamente.')
+                    : err;
+            } finally {
+                clearTimeout(timeoutId);
             }
         }
 
