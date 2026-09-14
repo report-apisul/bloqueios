@@ -3153,34 +3153,46 @@
 
         /** Envia a imagem para o Apps Script isolado, que autentica o PIN e
          *  grava o arquivo no GitHub. Content-Type text/plain evita o preflight
-         *  CORS (que o Apps Script não responde), permitindo ler a resposta. */
-        async function uploadClimateImage(dataUrl) {
+         *  CORS (que o Apps Script não responde), permitindo ler a resposta.
+         *
+         *  O endpoint do Apps Script ocasionalmente falha de forma transitória
+         *  (instabilidade momentânea do Google, observada em testes) — por
+         *  isso há uma nova tentativa automática antes de desistir. */
+        async function uploadClimateImage(dataUrl, attempt = 1) {
             if (!CLIMATE_IMAGE_UPLOAD_URL || CLIMATE_IMAGE_UPLOAD_URL.startsWith('COLE_AQUI')) {
                 throw new Error('URL do Apps Script de upload ainda não foi configurada.');
             }
 
-            const res = await fetch(CLIMATE_IMAGE_UPLOAD_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({
-                    action: 'uploadClimateImage',
-                    pin: adminPinPlain,
-                    filename: 'relatorio.jpeg',
-                    imageBase64: dataUrl
-                })
-            });
-
-            let data;
             try {
-                data = await res.json();
-            } catch {
-                throw new Error('Resposta inesperada do servidor de upload.');
-            }
+                const res = await fetch(CLIMATE_IMAGE_UPLOAD_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: 'uploadClimateImage',
+                        pin: adminPinPlain,
+                        filename: 'relatorio.jpeg',
+                        imageBase64: dataUrl
+                    })
+                });
 
-            if (!data || data.status !== 'success') {
-                throw new Error(data?.message || 'Falha ao gravar a imagem no GitHub.');
+                let data;
+                try {
+                    data = await res.json();
+                } catch {
+                    throw new Error('Resposta inesperada do servidor de upload.');
+                }
+
+                if (!data || data.status !== 'success') {
+                    throw new Error(data?.message || 'Falha ao gravar a imagem no GitHub.');
+                }
+                return data;
+            } catch (err) {
+                if (attempt < 3) {
+                    await new Promise(resolve => setTimeout(resolve, 1800 * attempt));
+                    return uploadClimateImage(dataUrl, attempt + 1);
+                }
+                throw err;
             }
-            return data;
         }
 
         function sendToGoogleSheets(actionType, payloadData) {
