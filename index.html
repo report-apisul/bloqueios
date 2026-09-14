@@ -3110,7 +3110,15 @@
             } catch (err) {
                 console.error('Falha ao enviar imagem de análise climática:', err);
                 setClimateUploadStatus('Atualizar Imagem', false);
-                alert('Não foi possível enviar a imagem: ' + (err?.message || 'erro desconhecido'));
+                // A gravação em si acontece no servidor (Apps Script); esse erro
+                // pode ser só a confirmação que não voltou — vale checar o
+                // resultado antes de tentar de novo, para não duplicar o envio.
+                alert(
+                    'Não foi possível confirmar o envio: ' + (err?.message || 'erro desconhecido') +
+                    '\n\nIsso às vezes é só a mensagem de confirmação que não voltou — a imagem pode ' +
+                    'já ter sido gravada. Espere ~1 minuto e recarregue a página para conferir antes ' +
+                    'de tentar de novo.'
+                );
             }
         }
 
@@ -3155,9 +3163,14 @@
          *  grava o arquivo no GitHub. Content-Type text/plain evita o preflight
          *  CORS (que o Apps Script não responde), permitindo ler a resposta.
          *
-         *  O endpoint do Apps Script ocasionalmente falha de forma transitória
-         *  (instabilidade momentânea do Google, observada em testes) — por
-         *  isso há uma nova tentativa automática antes de desistir. */
+         *  O endpoint do Apps Script pode falhar de forma transitória sob uso
+         *  rápido e repetido (instabilidade do lado do Google, observada em
+         *  testes) — por isso há UMA nova tentativa, espaçada, antes de
+         *  desistir. A gravação em si é idempotente (sempre sobrescreve o
+         *  mesmo arquivo com o mesmo conteúdo), então uma tentativa "extra"
+         *  não causa dano — só é evitada para não gastar cota à toa. */
+        const MAX_UPLOAD_ATTEMPTS = 2;
+
         async function uploadClimateImage(dataUrl, attempt = 1) {
             if (!CLIMATE_IMAGE_UPLOAD_URL || CLIMATE_IMAGE_UPLOAD_URL.startsWith('COLE_AQUI')) {
                 throw new Error('URL do Apps Script de upload ainda não foi configurada.');
@@ -3193,12 +3206,13 @@
                 }
                 return data;
             } catch (err) {
-                if (attempt < 3) {
-                    await new Promise(resolve => setTimeout(resolve, 1800 * attempt));
+                if (attempt < MAX_UPLOAD_ATTEMPTS) {
+                    setClimateUploadStatus('Instabilidade — tentando de novo em 5s…', true);
+                    await new Promise(resolve => setTimeout(resolve, 5000));
                     return uploadClimateImage(dataUrl, attempt + 1);
                 }
                 throw (err.name === 'AbortError')
-                    ? new Error('O envio demorou demais e foi cancelado. Tente novamente.')
+                    ? new Error('O envio demorou demais e foi cancelado. Tente novamente em cerca de 1 minuto.')
                     : err;
             } finally {
                 clearTimeout(timeoutId);
