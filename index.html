@@ -3089,6 +3089,35 @@
            caminho (assets/imagens/relatorio.jpeg) via API do GitHub. */
         document.getElementById('climateImageInput')?.addEventListener('change', handleClimateImageSelect);
 
+        const CLIMATE_IMAGE_GITHUB_PATH_URL =
+            'https://api.github.com/repos/report-apisul/bloqueios/contents/assets/imagens/relatorio.jpeg?ref=main';
+
+        /** Lê o sha atual do arquivo direto na API pública do GitHub — sem
+         *  token, sem Apps Script. É a fonte da verdade sobre se o upload
+         *  realmente aconteceu, porque a resposta do Apps Script mostrou ser
+         *  o elo instável da cadeia (o envio em si sempre funcionava; só a
+         *  confirmação de volta ao navegador que às vezes não chegava). */
+        async function getCurrentImageSha() {
+            try {
+                const res = await fetch(CLIMATE_IMAGE_GITHUB_PATH_URL, { cache: 'no-store' });
+                if (!res.ok) return null;
+                const data = await res.json();
+                return data.sha || null;
+            } catch {
+                return null;
+            }
+        }
+
+        async function waitForImageShaChange(baselineSha, timeoutMs, intervalMs) {
+            const deadline = Date.now() + timeoutMs;
+            while (Date.now() < deadline) {
+                await new Promise(resolve => setTimeout(resolve, intervalMs));
+                const sha = await getCurrentImageSha();
+                if (sha && sha !== baselineSha) return true;
+            }
+            return false;
+        }
+
         async function handleClimateImageSelect(event) {
             const input = event.target;
             const file = input.files && input.files[0];
@@ -3103,22 +3132,39 @@
             setClimateUploadStatus('Otimizando imagem…', true);
             try {
                 const dataUrl = await resizeAndCompressImage(file, 1600, 0.85);
+
+                // Sha de antes do envio: é contra ele que vamos comparar para
+                // saber se algo realmente mudou no repositório.
+                const baselineSha = await getCurrentImageSha();
+
                 setClimateUploadStatus('Enviando imagem…', true);
-                await uploadClimateImage(dataUrl);
-                setClimateUploadStatus('Imagem enviada! O site atualiza em ~1 min.', false);
-                setTimeout(() => setClimateUploadStatus('Atualizar Imagem', false), 6000);
-            } catch (err) {
-                console.error('Falha ao enviar imagem de análise climática:', err);
-                setClimateUploadStatus('Atualizar Imagem', false);
-                // A gravação em si acontece no servidor (Apps Script); esse erro
-                // pode ser só a confirmação que não voltou — vale checar o
-                // resultado antes de tentar de novo, para não duplicar o envio.
-                alert(
-                    'Não foi possível confirmar o envio: ' + (err?.message || 'erro desconhecido') +
-                    '\n\nIsso às vezes é só a mensagem de confirmação que não voltou — a imagem pode ' +
-                    'já ter sido gravada. Espere ~1 minuto e recarregue a página para conferir antes ' +
-                    'de tentar de novo.'
+                // Não deixa um erro de LEITURA da resposta (o problema real
+                // observado) interromper o fluxo — a confirmação de verdade
+                // vem da checagem direta no GitHub logo abaixo.
+                uploadClimateImage(dataUrl).catch(err =>
+                    console.warn('Apps Script não confirmou o envio (checando direto no GitHub):', err)
                 );
+
+                setClimateUploadStatus('Confirmando no GitHub…', true);
+                const confirmed = baselineSha
+                    ? await waitForImageShaChange(baselineSha, 45000, 3000)
+                    : true; // não deu pra ler o sha atual: segue sem bloquear
+
+                if (confirmed) {
+                    setClimateUploadStatus('Imagem enviada! O site atualiza em ~1 min.', false);
+                    setTimeout(() => setClimateUploadStatus('Atualizar Imagem', false), 6000);
+                } else {
+                    setClimateUploadStatus('Atualizar Imagem', false);
+                    alert(
+                        'Não foi possível confirmar o envio em até 45s.\n\n' +
+                        'Aguarde ~1 minuto, recarregue a página e confira se a imagem já mudou ' +
+                        'antes de tentar de novo — evita gravações duplicadas.'
+                    );
+                }
+            } catch (err) {
+                console.error('Falha ao preparar imagem de análise climática:', err);
+                setClimateUploadStatus('Atualizar Imagem', false);
+                alert('Não foi possível preparar a imagem: ' + (err?.message || 'erro desconhecido'));
             }
         }
 
@@ -3161,25 +3207,21 @@
 
         /** Envia a imagem para o Apps Script isolado, que autentica o PIN e
          *  grava o arquivo no GitHub. Content-Type text/plain evita o preflight
-         *  CORS (que o Apps Script não responde), permitindo ler a resposta.
-         *
-         *  O endpoint do Apps Script pode falhar de forma transitória sob uso
-         *  rápido e repetido (instabilidade do lado do Google, observada em
-         *  testes) — por isso há UMA nova tentativa, espaçada, antes de
-         *  desistir. A gravação em si é idempotente (sempre sobrescreve o
-         *  mesmo arquivo com o mesmo conteúdo), então uma tentativa "extra"
-         *  não causa dano — só é evitada para não gastar cota à toa. */
-        const MAX_UPLOAD_ATTEMPTS = 2;
-
-        async function uploadClimateImage(dataUrl, attempt = 1) {
+         *  CORS (que o Apps Script não responde), permitindo ler a resposta —
+         *  mas essa leitura provou ser o elo instável da cadeia (o envio em
+         *  si sempre chegava a gravar; só a confirmação que às vezes não
+         *  voltava a tempo). Por isso esta função não é mais reexecutada em
+         *  retentativa: quem chama trata a falha aqui como "sem confirmação",
+         *  não como "sem sucesso", e confirma de verdade consultando o
+         *  GitHub diretamente (ver waitForImageShaChange). Reenviar aqui só
+         *  causaria gravações duplicadas sem ganho real de confiabilidade. */
+        async function uploadClimateImage(dataUrl) {
             if (!CLIMATE_IMAGE_UPLOAD_URL || CLIMATE_IMAGE_UPLOAD_URL.startsWith('COLE_AQUI')) {
                 throw new Error('URL do Apps Script de upload ainda não foi configurada.');
             }
 
-            // Sem timeout, um fetch travado na rede deixaria o botão preso em
-            // "Enviando imagem..." para sempre, sem nunca cair na retentativa.
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 25000);
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
 
             try {
                 const res = await fetch(CLIMATE_IMAGE_UPLOAD_URL, {
@@ -3205,15 +3247,6 @@
                     throw new Error(data?.message || 'Falha ao gravar a imagem no GitHub.');
                 }
                 return data;
-            } catch (err) {
-                if (attempt < MAX_UPLOAD_ATTEMPTS) {
-                    setClimateUploadStatus('Instabilidade — tentando de novo em 5s…', true);
-                    await new Promise(resolve => setTimeout(resolve, 5000));
-                    return uploadClimateImage(dataUrl, attempt + 1);
-                }
-                throw (err.name === 'AbortError')
-                    ? new Error('O envio demorou demais e foi cancelado. Tente novamente em cerca de 1 minuto.')
-                    : err;
             } finally {
                 clearTimeout(timeoutId);
             }
