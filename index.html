@@ -1653,7 +1653,7 @@
                 <div class="lg:col-span-8">
                     <h1 class="hero-title">Inteligência logística para <em>decisões críticas.</em></h1>
                     <p class="hero-copy mt-6">
-                        Monitoramento integrado de mobilizações, bloqueios e impactos em corredores estratégicos — com visão executiva, dados georreferenciados e atualização contínua para proteger a operação.
+                        Monitoramento integrado de mobilizações, bloqueios e impactos em corredores estratégicos, com visão executiva, dados georreferenciados e atualização contínua para proteger a operação.
                     </p>
                     <div class="mt-8 flex flex-wrap gap-3">
                         <a href="#mapa-operacional" class="accent-button">
@@ -2222,9 +2222,9 @@
         function handleFetchFailure() {
             lastFetchFailed = true;
             if (hasLoaded) {
-                setSyncState('warn', 'Sem conexão — exibindo últimos dados carregados');
+                setSyncState('warn', 'Sem conexão, exibindo últimos dados carregados');
             } else {
-                setSyncState('warn', 'Não foi possível conectar — tentando de novo…');
+                setSyncState('warn', 'Não foi possível conectar, tentando de novo…');
                 renderData();
                 setTimeout(fetchSpreadsheetData, 15000);
             }
@@ -3220,7 +3220,7 @@
                     alert(
                         'Não foi possível confirmar o envio em até 45s.\n\n' +
                         'Aguarde ~1 minuto, recarregue a página e confira se a imagem já mudou ' +
-                        'antes de tentar de novo — evita gravações duplicadas.'
+                        'antes de tentar de novo, para evitar gravações duplicadas.'
                     );
                 }
             } catch (err) {
