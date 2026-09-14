@@ -1678,7 +1678,7 @@
                     <p class="text-xs text-slate-400 leading-relaxed mt-4">Consolidação automática de ocorrências, fontes externas e coordenadas operacionais.</p>
                     <div class="hero-metric mt-5 pt-4 grid grid-cols-2 gap-4">
                         <div>
-                            <span class="block text-xl font-semibold text-white">5min</span>
+                            <span class="block text-xl font-semibold text-white">30min</span>
                             <span class="field-label mt-1">Ciclo de atualização</span>
                         </div>
                         <div>
@@ -2096,6 +2096,11 @@
         // Distingue "ainda carregando" de "carregou e está vazio" — os dois vazios
         // precisam de mensagens diferentes na tabela.
         let hasLoaded = false;
+        // O Apps Script às vezes devolve uma página de erro do Google em vez de
+        // JSON (instabilidade observada nos testes). Sem esta flag, isso virava
+        // silenciosamente "zero ocorrências" — nunca é isso que aconteceu de
+        // verdade, então a tela precisa dizer "sem conexão", não "zerado".
+        let lastFetchFailed = false;
 
         // O PIN não pode viver em texto puro no cliente: qualquer visitante leria o código-fonte
         // e ganharia permissão de escrita na planilha. Guardamos apenas o hash SHA-256; a
@@ -2142,14 +2147,28 @@
             renderData();
             fetchSpreadsheetData();
             
-            // Auto-refresh from spreadsheet every 60 seconds
-            pollInterval = setInterval(fetchSpreadsheetData, 5 * 60000);
+            // Atualização automática a partir da planilha a cada 30 minutos.
+            pollInterval = setInterval(fetchSpreadsheetData, 30 * 60000);
         };
+
+        /** fetch() não tem timeout embutido: uma conexão que trava (nem responde
+         *  nem erra) prende a página em "Conectando..." para sempre. Isso já
+         *  causou o próprio problema que handleFetchFailure existe para
+         *  evitar — sem isto, o erro nunca chega a acontecer, só trava. */
+        function fetchWithTimeout(url, timeoutMs) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+            return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timeoutId));
+        }
 
         function fetchSpreadsheetData() {
             const statusEl = document.getElementById('sheetSyncStatus');
 
-            fetch(APPS_SCRIPT_WEBAPP_URL)
+            fetchWithTimeout(APPS_SCRIPT_WEBAPP_URL, 15000)
+                // res.json() lança quando o Google devolve uma página de erro
+                // HTML em vez do JSON esperado (instabilidade intermitente do
+                // Apps Script) — isso cai no .catch() abaixo como qualquer
+                // outra falha, corretamente.
                 .then(res => res.json())
                 .then(resData => {
                     if (resData && resData.status === "success" && Array.isArray(resData.data) && resData.data.length > 1) {
@@ -2158,6 +2177,7 @@
                             const isFirstLoad = !hasLoaded;
                             occurrences = parsed;
                             hasLoaded = true;
+                            lastFetchFailed = false;
                             renderData({ refit: isFirstLoad });
                             setSyncState('ok', 'Planilha conectada');
                             updateLiveTimestamp();
@@ -2172,7 +2192,7 @@
         }
 
         function fetchCSVFallback() {
-            fetch(SPREADSHEET_CSV_URL)
+            fetchWithTimeout(SPREADSHEET_CSV_URL, 15000)
                 .then(res => res.text())
                 .then(csvText => {
                     const matrix = parseCSVTo2DArray(csvText);
@@ -2181,16 +2201,34 @@
                         const isFirstLoad = !hasLoaded;
                         occurrences = parsedData;
                         hasLoaded = true;
+                        lastFetchFailed = false;
                         renderData({ refit: isFirstLoad });
                         setSyncState('ok', 'Planilha conectada');
                         updateLiveTimestamp();
+                    } else {
+                        handleFetchFailure();
                     }
                 })
                 .catch(() => {
-                    hasLoaded = true;
-                    renderData();
-                    setSyncState('warn', 'Exibindo dados locais');
+                    handleFetchFailure();
                 });
+        }
+
+        /** As duas fontes (Apps Script e CSV direto) falharam nesta rodada.
+         *  Nunca trata isso como "zero registros": se já havia dados
+         *  carregados antes, mantém-nos na tela e só avisa que a atualização
+         *  falhou; se é a primeira carga, mantém o estado de carregamento
+         *  (não marca hasLoaded) e tenta de novo em breve, mais rápido que o
+         *  ciclo normal de atualização. */
+        function handleFetchFailure() {
+            lastFetchFailed = true;
+            if (hasLoaded) {
+                setSyncState('warn', 'Sem conexão — exibindo últimos dados carregados');
+            } else {
+                setSyncState('warn', 'Não foi possível conectar — tentando de novo…');
+                renderData();
+                setTimeout(fetchSpreadsheetData, 15000);
+            }
         }
 
         /**
@@ -2665,6 +2703,18 @@
         }
 
         function updateStats() {
+            // Falha de conexão antes de qualquer carga bem-sucedida: "0" pareceria
+            // "confirmadamente zero bloqueios", o que não é verdade — mostra "—"
+            // (sem dado ainda) em vez de fingir que sabemos o valor real.
+            if (!hasLoaded && lastFetchFailed) {
+                ['statTotal', 'statTotalBlocked', 'statPartialBlocked', 'statCleared',
+                 'shareTotalBlocked', 'sharePartialBlocked', 'shareCleared'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = '—';
+                });
+                return;
+            }
+
             const counts = getStatusCounts();
             const total = occurrences.length;
 
@@ -2713,6 +2763,15 @@
             const descEl = document.getElementById('riskDescription');
             const basisEl = document.getElementById('riskBasis');
             if (!needle) return;
+
+            if (!hasLoaded && lastFetchFailed) {
+                needle.style.transform = 'rotate(-90deg)';
+                if (levelEl) levelEl.textContent = 'Sem conexão';
+                if (pillEl) { pillEl.textContent = 'SEM CONEXÃO'; pillEl.className = 'status-pill pill-neutral'; }
+                if (descEl) descEl.textContent = 'Não foi possível carregar os dados da planilha agora.';
+                if (basisEl) basisEl.textContent = 'Tentando reconectar automaticamente…';
+                return;
+            }
 
             if (total === 0) {
                 needle.style.transform = 'rotate(-90deg)';
@@ -2782,6 +2841,17 @@
                             <i class="fa-solid fa-circle-check table-empty__icon is-ok" aria-hidden="true"></i>
                             <p class="table-empty__title">Nenhuma ocorrência registrada</p>
                             <p class="table-empty__hint">Nenhum bloqueio ativo na base neste momento.</p>
+                        </div>
+                    </td>`;
+                } else if (lastFetchFailed) {
+                    // Falhou antes de carregar pela primeira vez: isto NÃO é
+                    // "zero registros" — é falta de conexão. A busca continua
+                    // tentando sozinha em segundo plano (handleFetchFailure).
+                    tr.innerHTML = `<td colspan="8">
+                        <div class="table-empty">
+                            <i class="fa-solid fa-plug-circle-xmark table-empty__icon" aria-hidden="true"></i>
+                            <p class="table-empty__title">Não foi possível conectar à planilha</p>
+                            <p class="table-empty__hint">Tentando novamente automaticamente…</p>
                         </div>
                     </td>`;
                 } else {
@@ -3087,13 +3157,17 @@
          *  o elo instável da cadeia (o envio em si sempre funcionava; só a
          *  confirmação de volta ao navegador que às vezes não chegava). */
         async function getCurrentImageSha() {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
             try {
-                const res = await fetch(CLIMATE_IMAGE_GITHUB_PATH_URL, { cache: 'no-store' });
+                const res = await fetch(CLIMATE_IMAGE_GITHUB_PATH_URL, { cache: 'no-store', signal: controller.signal });
                 if (!res.ok) return null;
                 const data = await res.json();
                 return data.sha || null;
             } catch {
                 return null;
+            } finally {
+                clearTimeout(timeoutId);
             }
         }
 
