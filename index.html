@@ -1568,6 +1568,7 @@
                         <a class="apisul-nav-link" href="#overview">Visão Geral</a>
                         <a class="apisul-nav-link" href="#mapa-operacional">Mapa</a>
                         <a class="apisul-nav-link" href="#registros">Registros</a>
+                        <a class="apisul-nav-link" href="#relatorio">Relatório</a>
                     </nav>
 
                     <div class="hidden lg:block w-px h-8 bg-sky-500/25"></div>
@@ -1889,7 +1890,7 @@
         </div>
 
         <!-- Seção com Análise Climática -->
-        <section class="panel" style="margin-top: 48px; padding: 0; overflow: hidden;">
+        <section id="relatorio" class="panel" style="margin-top: 48px; padding: 0; overflow: hidden; scroll-margin-top: 96px;">
             <img src="assets/imagens/relatorio.jpeg" style="display: block; width: 100%; max-width: 100%;" alt="Análise climática Brasil">
         </section>
 
@@ -2079,22 +2080,10 @@
         // Troque pela URL /exec do seu Apps Script depois de implantá-lo.
         const CLIMATE_IMAGE_UPLOAD_URL = 'https://script.google.com/macros/s/AKfycbz63FoewwbSzgO_sb2O__qvRMCYZdyUEQfNfUStKBzP6CFMKLd83j8e_xoDof6N9QffPg/exec';
 
-        // Pre-loaded single seed item matching Google Sheet structure to display immediately on initial load
-        let occurrences = [
-            {
-                id: "PAR-001",
-                time: "2026-07-22 17:53",
-                uf: "SP",
-                cidade: "Santos",
-                local: "Porto de Santos - Acesso Marginal",
-                lat: -25.437752,
-                lng: -49.287531,
-                status: "TOTAL",
-                news: "https://g1.globo.com",
-                sourceName: "Link da Fonte",
-                observacoes: ""
-            }
-        ];
+        // Começa vazio: nada de registro de exemplo. Enquanto a planilha não
+        // carrega, hasLoaded (abaixo) mostra o estado "carregando", não uma
+        // linha fictícia — evita mostrar um dado errado se a rede falhar.
+        let occurrences = [];
 
         let map;
         let mapMarkers = [];
