@@ -1600,6 +1600,25 @@
                                     <span id="sheetSyncStatus">Conectando…</span>
                                 </div>
 
+                                <!-- ADMIN:START -->
+                                <!-- Somente leitura / administrador -->
+                                <button id="adminToggleBtn" onclick="toggleAdminAuth()" class="outline-button px-3 py-2 rounded-lg text-[11px] font-semibold flex items-center gap-2 transition-all w-full">
+                                    <span class="icon-chip sm tone-amber" style="width:22px;height:22px;font-size:.62rem;"><i id="adminLockIcon" class="fa-solid fa-lock"></i></span>
+                                    <span id="adminStatusText" class="text-amber-300 font-bold">Somente Leitura</span>
+                                </button>
+
+                                <!-- Novo bloqueio -->
+                                <button onclick="closeControlsMenu(); checkAdminAction(() => openAddModal());" class="accent-button font-bold px-3 py-2.5 rounded-lg text-[11px] flex items-center gap-2 transition-all w-full">
+                                    <i class="fa-solid fa-plus"></i><span>Novo Bloqueio</span>
+                                </button>
+
+                                <!-- Atualizar imagem de análise climática (grava direto no GitHub) -->
+                                <button onclick="checkAdminAction(() => document.getElementById('climateImageInput').click());" id="climateImageUploadBtn" class="outline-button px-3 py-2 rounded-lg text-[11px] font-semibold flex items-center gap-2 transition-all w-full" title="Enviar nova imagem de análise climática">
+                                    <span class="icon-chip sm tone-indigo" style="width:22px;height:22px;font-size:.62rem;"><i class="fa-solid fa-image"></i></span>
+                                    <span id="climateImageUploadText" class="text-indigo-200 font-bold">Atualizar Imagem</span>
+                                </button>
+                                <input type="file" id="climateImageInput" accept="image/png,image/jpeg,image/webp" style="display:none">
+                                <!-- ADMIN:END -->
 
                                 <!-- Tema do site -->
                                 <button onclick="toggleSiteTheme()" id="siteThemeToggleBtn" class="outline-button px-3 py-2 rounded-lg text-[11px] font-semibold flex items-center gap-2 transition-all w-full" title="Alternar site claro/escuro">
@@ -1950,12 +1969,121 @@
         </div>
     </footer>
 
+    <!-- ADMIN:START -->
+    <div id="addModal" class="fixed inset-0 z-[1000] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="bg-navy-900 border border-navy-700 rounded-xl w-full max-w-xl overflow-hidden shadow-2xl">
+            <div class="bg-navy-950 px-6 py-4 border-b border-navy-800 flex items-center justify-between">
+                <h3 id="modalTitle" class="font-bold text-white text-base flex items-center gap-2.5 font-heading">
+                    <span class="icon-chip sm"><i class="fa-solid fa-location-dot"></i></span> Cadastrar Nova Ocorrência
+                </h3>
+                <button onclick="closeAddModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <form id="addForm" onsubmit="handleSaveOccurrence(event)" class="p-6 space-y-4 text-xs">
+                <input type="hidden" id="editIndex" value="-1">
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1">
+                            Código ID <span class="text-[10px] text-sky-400 font-normal ml-1">(Gerado Automático)</span>
+                        </label>
+                        <input type="text" id="inputID" readonly required placeholder="PAR-001" class="w-full apisul-input p-2.5 text-sky-400 font-mono font-bold opacity-80 cursor-not-allowed">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1">Status da Via</label>
+                        <select id="inputStatus" class="w-full apisul-input p-2.5 text-white">
+                            <option value="TOTAL">Bloqueio Total 🔴</option>
+                            <option value="PARCIAL">Bloqueio Parcial 🟠</option>
+                            <option value="LIBERADO">Liberado 🟢</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1">UF / Estado</label>
+                        <input type="text" id="inputUF" required placeholder="SP" class="w-full apisul-input p-2.5 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1">Cidade</label>
+                        <input type="text" id="inputCidade" required placeholder="Santos" class="w-full apisul-input p-2.5 text-white">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Local / Endereço Completo</label>
+                    <input type="text" id="inputLocal" required placeholder="Porto de Santos - Acesso Marginal, Santos - SP" class="w-full apisul-input p-2.5 text-white">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1">Latitude</label>
+                        <input type="number" step="any" id="inputLat" required placeholder="-23.9535" class="w-full apisul-input p-2.5 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1">Longitude</label>
+                        <input type="number" step="any" id="inputLng" required placeholder="-46.3012" class="w-full apisul-input p-2.5 text-white">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Link da Notícia / Imprensa</label>
+                    <input type="url" id="inputNews" placeholder="https://g1.globo.com/..." class="w-full apisul-input p-2.5 text-white">
+                </div>
+
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Observações</label>
+                    <textarea id="inputObs" rows="2" placeholder="Detalhes adicionais sobre a ocorrência…" class="w-full apisul-input p-2.5 text-white resize-none"></textarea>
+                </div>
+
+                <div class="pt-2 flex justify-end gap-3">
+                    <button type="button" onclick="closeAddModal()" class="px-4 py-2 bg-navy-800 text-slate-300 rounded font-semibold hover:bg-navy-700">Cancelar</button>
+                    <button type="submit" id="btnSaveSubmit" class="px-5 py-2 bg-sky-500 text-navy-950 rounded font-bold hover:bg-sky-400 flex items-center gap-2">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        <span>Salvar na Planilha</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="authModal" class="fixed inset-0 z-[1100] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
+        <div class="bg-navy-900 border border-navy-700 rounded-xl w-full max-w-sm overflow-hidden shadow-2xl">
+            <div class="bg-navy-950 px-5 py-3.5 border-b border-navy-800 flex items-center justify-between">
+                <h3 id="authModalTitle" class="font-bold text-white text-sm font-heading">Restrição de modificação</h3>
+                <button onclick="closeAuthModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-5 space-y-3.5 text-xs">
+                <p class="text-slate-300">
+                    Para adicionar, editar ou excluir ocorrências na planilha, insira o PIN de Administrador.
+                </p>
+                <div>
+                    <label class="block text-slate-400 font-semibold mb-1">PIN / Senha de Acesso</label>
+                    <input type="password" id="adminPinInput" placeholder="Digite o PIN..." class="w-full apisul-input p-2.5 text-white text-center font-mono text-base">
+                </div>
+                <div id="authErrorMessage" class="text-red-400 font-semibold text-[11px] hidden text-center">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Senha incorreta. Tente novamente.
+                </div>
+                <div class="pt-2 flex justify-end gap-2">
+                    <button onclick="closeAuthModal()" class="px-3 py-2 bg-navy-800 text-slate-300 rounded font-semibold">Cancelar</button>
+                    <button onclick="submitAdminAuth()" class="px-4 py-2 bg-amber-500 text-navy-950 font-bold rounded hover:bg-amber-400">Desbloquear</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ADMIN:END -->
 
     <script>
         const SPREADSHEET_ID = '1sz-57Pc_zE0m0sGp3XvH8Qi3Y2CJF_X9wcIuy6hACqk';
         const SPREADSHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv`;
         const APPS_SCRIPT_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycby1D5ugpVfbOKUsYsk0l7KitynQ7in2GYtKlw21zj0shUe0TgeMcNNaGhWlZkQCW_CV/exec';
 
+        // ADMIN:START
+        // Apps Script isolado (novo projeto, sem relação com a planilha) que recebe
+        // a imagem em base64 e a grava no repositório via API do GitHub.
+        // Troque pela URL /exec do seu Apps Script depois de implantá-lo.
+        const CLIMATE_IMAGE_UPLOAD_URL = 'https://script.google.com/macros/s/AKfycbz63FoewwbSzgO_sb2O__qvRMCYZdyUEQfNfUStKBzP6CFMKLd83j8e_xoDof6N9QffPg/exec';
+        // ADMIN:END
 
         // Começa vazio: nada de registro de exemplo. Enquanto a planilha não
         // carrega, hasLoaded (abaixo) mostra o estado "carregando", não uma
@@ -1964,6 +2092,13 @@
 
         let map;
         let mapMarkers = [];
+        // ADMIN:START
+        let isAdmin = false;
+        let pendingAdminAction = null;
+        // PIN em texto puro, só em memória (nunca salvo), usado para autorizar o
+        // upload de imagem no Apps Script isolado. Some ao trancar o Modo Edição.
+        let adminPinPlain = '';
+        // ADMIN:END
         let pollInterval = null;
         // Distingue "ainda carregando" de "carregou e está vazio" — os dois vazios
         // precisam de mensagens diferentes na tabela.
@@ -1974,6 +2109,23 @@
         // verdade, então a tela precisa dizer "sem conexão", não "zerado".
         let lastFetchFailed = false;
 
+        // ADMIN:START
+        // O PIN não pode viver em texto puro no cliente: qualquer visitante leria o código-fonte
+        // e ganharia permissão de escrita na planilha. Guardamos apenas o hash SHA-256; a
+        // verificação compara hashes, então o segredo nunca trafega no bundle.
+        // Continua sendo uma barreira de conveniência (não substitui autorização no Apps Script),
+        // mas remove o segredo do código. Esta página (admin) é a única que carrega este hash —
+        // a versão pública (index.html) não tem nenhum vestígio do PIN.
+        const ADMIN_PIN_HASH = '74660a2c47392aa8061ed2e3e3f7f995c8839565f56a7cc3e92dae3626f6036d';
+
+        async function hashPin(value) {
+            const bytes = new TextEncoder().encode(String(value));
+            const digest = await crypto.subtle.digest('SHA-256', bytes);
+            return Array.from(new Uint8Array(digest))
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
+        }
+        // ADMIN:END
 
         /** Neutraliza HTML vindo da planilha antes de qualquer innerHTML. */
         function escapeHTML(value) {
@@ -2757,6 +2909,14 @@
                             <button type="button" onclick="centerOnMap(${item.lat}, ${item.lng})" class="row-icon-btn tone-sky" aria-label="Ver ${escapeHTML(label)} no mapa">
                                 <i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i>
                             </button>
+                            <!-- ADMIN:START -->
+                            <button type="button" onclick="checkAdminAction(() => openEditModal(${index}))" class="row-icon-btn tone-amber" aria-label="Editar registro ${escapeHTML(item.id)}">
+                                <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+                            </button>
+                            <button type="button" onclick="checkAdminAction(() => deleteOccurrence('${escapeHTML(item.id)}'))" class="row-icon-btn tone-red" aria-label="Excluir registro ${escapeHTML(item.id)}">
+                                <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+                            </button>
+                            <!-- ADMIN:END -->
                         </div>
                     </td>
                 `;
@@ -2840,6 +3000,460 @@
             applyView();
         }
 
+        // ADMIN:START
+        function toggleAdminAuth() {
+            if (isAdmin) {
+                isAdmin = false;
+                adminPinPlain = '';
+                updateAdminUI();
+            } else {
+                openAuthModal();
+            }
+        }
+
+        function checkAdminAction(callback) {
+            if (isAdmin) {
+                callback();
+            } else {
+                pendingAdminAction = callback;
+                openAuthModal();
+            }
+        }
+
+        // ---- Comportamento de diálogo -----------------------------------------
+        // Os modais eram apenas divs escondidas: sem Esc, sem foco preso, sem
+        // devolver o foco a quem os abriu. Um usuário de teclado ficava preso
+        // navegando a página inteira por trás do overlay.
+        const modalStack = [];
+
+        const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+        function openModal(id, firstFocusId) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            modalStack.push({ id, restoreTo: document.activeElement });
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            requestAnimationFrame(() => {
+                const first = firstFocusId ? document.getElementById(firstFocusId) : null;
+                (first || modal.querySelector(FOCUSABLE))?.focus();
+            });
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            modal.classList.add('hidden');
+            const index = modalStack.findIndex(entry => entry.id === id);
+            const entry = index !== -1 ? modalStack.splice(index, 1)[0] : null;
+            if (!modalStack.length) document.body.style.overflow = '';
+            entry?.restoreTo?.focus?.();
+        }
+
+        document.addEventListener('keydown', event => {
+            if (!modalStack.length) return;
+            const top = modalStack[modalStack.length - 1];
+            const modal = document.getElementById(top.id);
+            if (!modal) return;
+
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                if (top.id === 'authModal') closeAuthModal();
+                else closeModal(top.id);
+                return;
+            }
+
+            if (event.key !== 'Tab') return;
+
+            // Foco preso: Tab circula apenas dentro do diálogo aberto.
+            const items = [...modal.querySelectorAll(FOCUSABLE)].filter(el => el.offsetParent !== null);
+            if (!items.length) return;
+            const first = items[0];
+            const last = items[items.length - 1];
+
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        });
+
+        // Clicar no fundo escuro fecha o diálogo.
+        ['addModal', 'authModal'].forEach(id => {
+            document.getElementById(id)?.addEventListener('mousedown', event => {
+                if (event.target.id !== id) return;
+                if (id === 'authModal') closeAuthModal();
+                else closeModal(id);
+            });
+        });
+
+        function openAuthModal() {
+            const input = document.getElementById('adminPinInput');
+            if (input) {
+                input.value = '';
+                input.removeAttribute('aria-invalid');
+            }
+            document.getElementById('authErrorMessage')?.classList.add('hidden');
+            openModal('authModal', 'adminPinInput');
+        }
+
+        function closeAuthModal() {
+            closeModal('authModal');
+            pendingAdminAction = null;
+        }
+
+        async function submitAdminAuth() {
+            const input = document.getElementById('adminPinInput');
+            const errorEl = document.getElementById('authErrorMessage');
+            const pin = input?.value || '';
+
+            let matches = false;
+            try {
+                matches = (await hashPin(pin)) === ADMIN_PIN_HASH;
+            } catch {
+                matches = false;
+            }
+
+            if (!matches) {
+                errorEl?.classList.remove('hidden');
+                if (input) {
+                    input.value = '';
+                    input.setAttribute('aria-invalid', 'true');
+                    input.focus();
+                }
+                return;
+            }
+
+            isAdmin = true;
+            adminPinPlain = pin;
+            input?.removeAttribute('aria-invalid');
+            updateAdminUI();
+            closeAuthModal();
+            if (pendingAdminAction) {
+                const action = pendingAdminAction;
+                pendingAdminAction = null;
+                action();
+            }
+        }
+
+        function updateAdminUI() {
+            const statusText = document.getElementById('adminStatusText');
+            const icon = document.getElementById('adminLockIcon');
+            const btn = document.getElementById('adminToggleBtn');
+
+            if (isAdmin) {
+                if (statusText) { statusText.innerText = "Modo Edição"; statusText.className = "text-emerald-400 font-bold"; }
+                if (icon) icon.className = "fa-solid fa-lock-open text-emerald-400";
+                if (btn) btn.classList.add("border-emerald-500/50");
+            } else {
+                if (statusText) { statusText.innerText = "Somente Leitura"; statusText.className = "text-amber-400 font-bold"; }
+                if (icon) icon.className = "fa-solid fa-lock text-amber-400";
+                if (btn) btn.classList.remove("border-emerald-500/50");
+            }
+        }
+
+        /* ---- Upload da imagem de Análise Climática -------------------------
+           Fluxo: seleciona arquivo -> redimensiona/converte para JPEG no
+           próprio navegador (Canvas) -> envia em base64 para um Apps Script
+           isolado (sem relação com a planilha), que grava sempre no mesmo
+           caminho (assets/imagens/relatorio.jpeg) via API do GitHub. */
+        document.getElementById('climateImageInput')?.addEventListener('change', handleClimateImageSelect);
+
+        const CLIMATE_IMAGE_GITHUB_PATH_URL =
+            'https://api.github.com/repos/report-apisul/bloqueios/contents/assets/imagens/relatorio.jpeg?ref=main';
+
+        /** Lê o sha atual do arquivo direto na API pública do GitHub — sem
+         *  token, sem Apps Script. É a fonte da verdade sobre se o upload
+         *  realmente aconteceu, porque a resposta do Apps Script mostrou ser
+         *  o elo instável da cadeia (o envio em si sempre funcionava; só a
+         *  confirmação de volta ao navegador que às vezes não chegava). */
+        async function getCurrentImageSha() {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
+            try {
+                const res = await fetch(CLIMATE_IMAGE_GITHUB_PATH_URL, { cache: 'no-store', signal: controller.signal });
+                if (!res.ok) return null;
+                const data = await res.json();
+                return data.sha || null;
+            } catch {
+                return null;
+            } finally {
+                clearTimeout(timeoutId);
+            }
+        }
+
+        async function waitForImageShaChange(baselineSha, timeoutMs, intervalMs) {
+            const deadline = Date.now() + timeoutMs;
+            while (Date.now() < deadline) {
+                await new Promise(resolve => setTimeout(resolve, intervalMs));
+                const sha = await getCurrentImageSha();
+                if (sha && sha !== baselineSha) return true;
+            }
+            return false;
+        }
+
+        async function handleClimateImageSelect(event) {
+            const input = event.target;
+            const file = input.files && input.files[0];
+            input.value = ''; // permite selecionar o mesmo arquivo de novo depois
+
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                alert('Selecione um arquivo de imagem (PNG, JPEG ou WEBP).');
+                return;
+            }
+
+            setClimateUploadStatus('Otimizando imagem…', true);
+            try {
+                const dataUrl = await resizeAndCompressImage(file, 1600, 0.85);
+
+                // Sha de antes do envio: é contra ele que vamos comparar para
+                // saber se algo realmente mudou no repositório.
+                const baselineSha = await getCurrentImageSha();
+
+                setClimateUploadStatus('Enviando imagem…', true);
+                // Não deixa um erro de LEITURA da resposta (o problema real
+                // observado) interromper o fluxo — a confirmação de verdade
+                // vem da checagem direta no GitHub logo abaixo.
+                uploadClimateImage(dataUrl).catch(err =>
+                    console.warn('Apps Script não confirmou o envio (checando direto no GitHub):', err)
+                );
+
+                setClimateUploadStatus('Confirmando no GitHub…', true);
+                const confirmed = baselineSha
+                    ? await waitForImageShaChange(baselineSha, 45000, 3000)
+                    : true; // não deu pra ler o sha atual: segue sem bloquear
+
+                if (confirmed) {
+                    setClimateUploadStatus('Imagem enviada! O site atualiza em ~1 min.', false);
+                    setTimeout(() => setClimateUploadStatus('Atualizar Imagem', false), 6000);
+                } else {
+                    setClimateUploadStatus('Atualizar Imagem', false);
+                    alert(
+                        'Não foi possível confirmar o envio em até 45s.\n\n' +
+                        'Aguarde ~1 minuto, recarregue a página e confira se a imagem já mudou ' +
+                        'antes de tentar de novo, para evitar gravações duplicadas.'
+                    );
+                }
+            } catch (err) {
+                console.error('Falha ao preparar imagem de análise climática:', err);
+                setClimateUploadStatus('Atualizar Imagem', false);
+                alert('Não foi possível preparar a imagem: ' + (err?.message || 'erro desconhecido'));
+            }
+        }
+
+        function setClimateUploadStatus(text, disabled) {
+            const label = document.getElementById('climateImageUploadText');
+            const btn = document.getElementById('climateImageUploadBtn');
+            if (label) label.textContent = text;
+            if (btn) btn.disabled = disabled;
+        }
+
+        /** Redimensiona (largura máxima) e converte qualquer imagem para JPEG,
+         *  sempre no mesmo formato/qualidade, independente do arquivo de origem. */
+        function resizeAndCompressImage(file, maxWidth, quality) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = () => reject(new Error('Falha ao ler o arquivo.'));
+                reader.onload = () => {
+                    const img = new Image();
+                    img.onerror = () => reject(new Error('Arquivo não é uma imagem válida.'));
+                    img.onload = () => {
+                        const scale = Math.min(1, maxWidth / img.width);
+                        const w = Math.round(img.width * scale);
+                        const h = Math.round(img.height * scale);
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        // Fundo branco: PNGs com transparência não podem virar
+                        // JPEG com fundo preto por padrão.
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.fillRect(0, 0, w, h);
+                        ctx.drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.src = reader.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        /** Envia a imagem para o Apps Script isolado, que autentica o PIN e
+         *  grava o arquivo no GitHub. Content-Type text/plain evita o preflight
+         *  CORS (que o Apps Script não responde), permitindo ler a resposta —
+         *  mas essa leitura provou ser o elo instável da cadeia (o envio em
+         *  si sempre chegava a gravar; só a confirmação que às vezes não
+         *  voltava a tempo). Por isso esta função não é mais reexecutada em
+         *  retentativa: quem chama trata a falha aqui como "sem confirmação",
+         *  não como "sem sucesso", e confirma de verdade consultando o
+         *  GitHub diretamente (ver waitForImageShaChange). Reenviar aqui só
+         *  causaria gravações duplicadas sem ganho real de confiabilidade. */
+        async function uploadClimateImage(dataUrl) {
+            if (!CLIMATE_IMAGE_UPLOAD_URL || CLIMATE_IMAGE_UPLOAD_URL.startsWith('COLE_AQUI')) {
+                throw new Error('URL do Apps Script de upload ainda não foi configurada.');
+            }
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+            try {
+                const res = await fetch(CLIMATE_IMAGE_UPLOAD_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    signal: controller.signal,
+                    body: JSON.stringify({
+                        action: 'uploadClimateImage',
+                        pin: adminPinPlain,
+                        filename: 'relatorio.jpeg',
+                        imageBase64: dataUrl
+                    })
+                });
+
+                let data;
+                try {
+                    data = await res.json();
+                } catch {
+                    throw new Error('Resposta inesperada do servidor de upload.');
+                }
+
+                if (!data || data.status !== 'success') {
+                    throw new Error(data?.message || 'Falha ao gravar a imagem no GitHub.');
+                }
+                return data;
+            } finally {
+                clearTimeout(timeoutId);
+            }
+        }
+
+        function sendToGoogleSheets(actionType, payloadData) {
+            const statusEl = document.getElementById('sheetSyncStatus');
+            if (statusEl) statusEl.innerText = "Enviando para Planilha...";
+
+            fetch(APPS_SCRIPT_WEBAPP_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: actionType,
+                    ...payloadData
+                })
+            })
+            .then(() => {
+                if (statusEl) statusEl.innerText = "Planilha Oficial Conectada";
+                setTimeout(fetchSpreadsheetData, 1500);
+            })
+            .catch(() => {
+                if (statusEl) statusEl.innerText = "Erro ao enviar (Local)";
+            });
+        }
+
+        function deleteOccurrence(id) {
+            occurrences = occurrences.filter(o => o.id !== id);
+            renderData();
+            sendToGoogleSheets("delete", { id: id });
+        }
+
+        function generateNextID() {
+            let maxNum = 0;
+            occurrences.forEach(item => {
+                if (item && item.id) {
+                    const match = String(item.id).match(/\d+/);
+                    if (match) {
+                        const num = parseInt(match[0], 10);
+                        if (!isNaN(num) && num > maxNum) {
+                            maxNum = num;
+                        }
+                    }
+                }
+            });
+            const nextNum = maxNum + 1;
+            return `PAR-${String(nextNum).padStart(3, '0')}`;
+        }
+
+        function openAddModal() { 
+            document.getElementById('editIndex').value = "-1";
+            document.getElementById('modalTitle').textContent = 'Cadastrar nova ocorrência';
+            document.getElementById('addForm').reset();
+
+            const inputID = document.getElementById('inputID');
+            if (inputID) {
+                inputID.value = generateNextID();
+                inputID.readOnly = true;
+            }
+
+            openModal('addModal', 'inputStatus');
+        }
+
+        function openEditModal(index) {
+            const item = occurrences[index];
+            if (!item) return;
+
+            document.getElementById('editIndex').value = index;
+            document.getElementById('modalTitle').textContent = `Editar ocorrência ${item.id}`;
+
+            const inputID = document.getElementById('inputID');
+            if (inputID) {
+                inputID.value = item.id;
+                inputID.readOnly = true;
+            }
+
+            document.getElementById('inputUF').value = item.uf;
+            document.getElementById('inputCidade').value = item.cidade;
+            document.getElementById('inputLocal').value = item.local;
+            document.getElementById('inputLat').value = item.lat;
+            document.getElementById('inputLng').value = item.lng;
+            document.getElementById('inputStatus').value = item.status;
+            document.getElementById('inputNews').value = item.news || '';
+            document.getElementById('inputObs').value = item.observacoes || '';
+
+            openModal('addModal', 'inputStatus');
+        }
+
+        function closeAddModal() { closeModal('addModal'); }
+
+        function handleSaveOccurrence(e) {
+            e.preventDefault();
+            const editIndex = parseInt(document.getElementById('editIndex').value);
+            const now = new Date();
+            const timeStr = String(now.getFullYear()) + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+
+            const payload = {
+                id: document.getElementById('inputID').value,
+                time: timeStr,
+                uf: document.getElementById('inputUF').value.toUpperCase(),
+                cidade: document.getElementById('inputCidade').value,
+                local: document.getElementById('inputLocal').value,
+                lat: parseFloat(document.getElementById('inputLat').value),
+                lng: parseFloat(document.getElementById('inputLng').value),
+                status: document.getElementById('inputStatus').value,
+                news: document.getElementById('inputNews').value,
+                observacoes: document.getElementById('inputObs').value
+            };
+
+            if (editIndex >= 0 && editIndex < occurrences.length) {
+                occurrences[editIndex] = {
+                    ...occurrences[editIndex],
+                    ...payload,
+                    sourceName: payload.news ? 'Link Cadastrado' : 'Sem Link'
+                };
+                sendToGoogleSheets("edit", payload);
+            } else {
+                const newItem = {
+                    ...payload,
+                    sourceName: payload.news ? 'Link Cadastrado' : 'Sem Link'
+                };
+                occurrences.unshift(newItem);
+                sendToGoogleSheets("add", payload);
+            }
+
+            renderData();
+            closeAddModal();
+            document.getElementById('addForm').reset();
+        }
+        // ADMIN:END
 
         function exportToCSV() {
             let csvContent = "data:text/csv;charset=utf-8,ID,Data_Hora,UF,Cidade,Local_Endereco,Latitude,Longitude,Status,Fonte_Noticia\n";
