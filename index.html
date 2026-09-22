@@ -2923,8 +2923,24 @@
                         entry.target.classList.add('is-visible');
                         observer.unobserve(entry.target);
                     });
-                }, { threshold: .08, rootMargin: '0px 0px -6% 0px' });
+                // threshold em fração da área do próprio alvo quebra em seções
+                // muito altas (ex.: a lista de registros no mobile, com dezenas
+                // de cards empilhados pode passar de 10000px) — 8% da altura
+                // dela exigiria rolar quase a seção inteira antes de revelar,
+                // deixando a tela em branco por um trecho enorme. threshold: 0
+                // dispara assim que o primeiro pixel entra na viewport,
+                // independente do tamanho do alvo.
+                }, { threshold: 0, rootMargin: '0px 0px -6% 0px' });
                 revealTargets.forEach(target => observer.observe(target));
+
+                // Rede de segurança: se o navegador nunca disparar o observer
+                // para algum alvo (foi reproduzido em campo — conteúdo real
+                // ficando com opacity:0 pra sempre), força a revelação depois
+                // de um tempo. Nunca deixa a página com conteúdo invisível.
+                setTimeout(() => {
+                    revealTargets.forEach(target => target.classList.add('is-visible'));
+                    observer.disconnect();
+                }, 1800);
             } else {
                 revealTargets.forEach(target => target.classList.add('is-visible'));
             }
