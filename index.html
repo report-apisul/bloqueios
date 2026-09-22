@@ -325,7 +325,6 @@
         }
         .hero-metric { border-top: 1px solid rgba(255,255,255,.09); }
 
-        .accent-button {
         /* Superfícies herdadas do Tailwind, alinhadas à escala de tokens.
            A pilha anterior tinha três camadas disputando estas mesmas classes
            com !important; agora existe uma definição por classe. */
@@ -353,6 +352,10 @@
             .hero-title { font-size: clamp(2.1rem, 9.5vw, 2.9rem); line-height: 1.1; letter-spacing: -.035em; }
             .apisul-hero::before { right: -310px; }
             .apisul-hero::after { display: none; }
+            /* Card "Status operacional" some no mobile: repete os mesmos
+               números (24/7, ciclo de atualização) que já aparecem no
+               painel de status logo abaixo, sem acrescentar nada novo. */
+            .hero-side-card { display: none; }
         }
 
         /* ---- Impressão: o relatório precisa sair legível em papel ---- */
