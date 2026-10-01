@@ -977,9 +977,52 @@
             background: var(--surface-3);
         }
         .occurrence-card__copy-btn.copied {
-            color: var(--ok);
-            border-color: rgba(61, 214, 156, 0.4);
-            background: rgba(6, 78, 59, 0.3);
+            color: #34d399;
+            border-color: rgba(52, 211, 153, 0.5);
+            background: rgba(6, 78, 59, 0.45);
+        }
+
+        /* Toast de notificação flutuante */
+        .toast-notification-container {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            pointer-events: none;
+        }
+        .toast-notification {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            border-radius: 9999px;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(52, 211, 153, 0.4);
+            color: #f8fafc;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(16, 185, 129, 0.2);
+            backdrop-filter: blur(12px);
+            opacity: 0;
+            transform: translateY(12px) scale(0.95);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: auto;
+        }
+        .toast-notification.is-visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        .toast-notification__icon {
+            color: #34d399;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .occurrence-card__local {
@@ -1827,6 +1870,20 @@
             background: #f1f5f9;
             color: #475569;
             border-color: rgba(203, 213, 225, 0.8);
+        }
+        html.light .occurrence-card__copy-btn.copied {
+            color: #059669;
+            border-color: rgba(16, 185, 129, 0.5);
+            background: #ecfdf5;
+        }
+        html.light .toast-notification {
+            background: rgba(255, 255, 255, 0.96);
+            border-color: rgba(16, 185, 129, 0.4);
+            color: #0f172a;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 0 15px rgba(16, 185, 129, 0.15);
+        }
+        html.light .toast-notification__icon {
+            color: #059669;
         }
         html.light .mini-stat-card {
             background: #ffffff;
@@ -3338,6 +3395,37 @@
             }
         }
 
+        function showToast(message, type = 'success') {
+            let container = document.getElementById('toastContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toastContainer';
+                container.className = 'toast-notification-container';
+                document.body.appendChild(container);
+            }
+
+            const toast = document.createElement('div');
+            toast.className = 'toast-notification';
+            const icon = type === 'success' 
+                ? '<i class="fa-solid fa-circle-check toast-notification__icon" aria-hidden="true"></i>' 
+                : '<i class="fa-solid fa-circle-exclamation toast-notification__icon" aria-hidden="true"></i>';
+            toast.innerHTML = `${icon}<span>${escapeHTML(message)}</span>`;
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    toast.classList.add('is-visible');
+                });
+            });
+
+            setTimeout(() => {
+                toast.classList.remove('is-visible');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 2800);
+        }
+
         function copyOccurrenceText(id, event) {
             if (event) event.stopPropagation();
             const item = occurrences.find(o => o.id === id);
@@ -3350,8 +3438,9 @@
 🕒 Atualização: ${item.time || 'N/D'}
 ${item.observacoes ? `📝 Obs: ${item.observacoes}\n` : ''}${item.news ? `🔗 Fonte: ${item.news}` : ''}`.trim();
 
-            navigator.clipboard.writeText(textToCopy).then(() => {
-                const btn = event?.currentTarget;
+            const btn = event?.target?.closest('.occurrence-card__copy-btn') || event?.currentTarget;
+
+            const onCopySuccess = () => {
                 if (btn) {
                     const originalHTML = btn.innerHTML;
                     btn.classList.add('copied');
@@ -3359,11 +3448,43 @@ ${item.observacoes ? `📝 Obs: ${item.observacoes}\n` : ''}${item.news ? `🔗 
                     setTimeout(() => {
                         btn.classList.remove('copied');
                         btn.innerHTML = originalHTML;
-                    }, 2000);
+                    }, 2200);
                 }
-            }).catch(() => {
-                console.warn('Falha ao copiar para área de transferência');
-            });
+                showToast(`Texto copiado com sucesso! (${item.cidade}/${item.uf})`, 'success');
+            };
+
+            const fallbackCopy = () => {
+                try {
+                    const tempTextArea = document.createElement('textarea');
+                    tempTextArea.value = textToCopy;
+                    tempTextArea.style.position = 'fixed';
+                    tempTextArea.style.left = '-9999px';
+                    tempTextArea.style.top = '0';
+                    document.body.appendChild(tempTextArea);
+                    tempTextArea.focus();
+                    tempTextArea.select();
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(tempTextArea);
+                    if (successful) {
+                        onCopySuccess();
+                    } else {
+                        showToast('Não foi possível copiar o texto.', 'error');
+                    }
+                } catch (err) {
+                    console.warn('Falha no fallback de cópia:', err);
+                    showToast('Não foi possível copiar o texto.', 'error');
+                }
+            };
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    onCopySuccess();
+                }).catch(() => {
+                    fallbackCopy();
+                });
+            } else {
+                fallbackCopy();
+            }
         }
 
         function toggleSplitSidebar() {
