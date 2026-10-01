@@ -1844,6 +1844,26 @@
             color: #b45309;
         }
 
+        /* Widget de Duplo Timestamp no Header */
+        .header-timestamp-widget {
+            background: rgba(5, 24, 52, 0.85);
+            border: 1px solid rgba(75, 195, 247, 0.22);
+            transition: all 0.2s ease;
+        }
+        html.light .header-timestamp-widget {
+            background: rgba(241, 245, 249, 0.95);
+            border: 1px solid rgba(203, 213, 225, 0.9);
+        }
+        html.light .header-timestamp-widget #sheetLastModified {
+            color: #0284c7 !important;
+        }
+        html.light .header-timestamp-widget #liveTimestamp {
+            color: #475569 !important;
+        }
+        html.light .header-timestamp-widget .header-timestamp-label {
+            color: #64748b !important;
+        }
+
         /* ---- Split View & Cards no Tema Claro -------------------------- */
         html.light .split-sidebar {
             background: rgba(248, 250, 252, 0.98);
@@ -1975,12 +1995,18 @@
                     <div class="hidden lg:block w-px h-8 bg-sky-500/25"></div>
 
                     <div class="flex items-center gap-3 ml-auto lg:ml-0">
-                        <!-- Data da última atualização (ao lado do menu) -->
-                        <div class="flex items-center gap-2 text-[10px] text-slate-300 pr-1">
-                            <span id="headerSyncDot" class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse transition-colors"></span>
-                            <div class="leading-tight">
-                                <span class="block uppercase tracking-[0.12em] text-slate-500 font-bold">Última atualização</span>
-                                <span id="liveTimestamp" class="font-medium text-slate-200">Carregando...</span>
+                        <!-- Data da última atualização e sincronização -->
+                        <div class="header-timestamp-widget flex items-center gap-2.5 text-[10px] text-slate-300 px-3 py-1.5 rounded-lg">
+                            <span id="headerSyncDot" class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse transition-colors flex-shrink-0"></span>
+                            <div class="leading-tight flex flex-col gap-0.5">
+                                <div class="flex items-center gap-1.5 whitespace-nowrap">
+                                    <span class="header-timestamp-label uppercase tracking-[0.12em] text-slate-400 font-bold text-[9px]">Edição Planilha:</span>
+                                    <span id="sheetLastModified" class="font-semibold text-sky-300">Carregando...</span>
+                                </div>
+                                <div class="flex items-center gap-1.5 whitespace-nowrap text-[9px]">
+                                    <span class="header-timestamp-label uppercase tracking-[0.12em] text-slate-500 font-medium">Sincronizado:</span>
+                                    <span id="liveTimestamp" class="font-medium text-slate-300">Carregando...</span>
+                                </div>
                             </div>
                         </div>
 
@@ -2019,6 +2045,38 @@
                                     <span id="climateImageUploadText" class="text-indigo-200 font-bold">Atualizar Imagem</span>
                                 </button>
                                 <input type="file" id="climateImageInput" accept="image/png,image/jpeg,image/webp" style="display:none">
+
+                                <!-- Visibilidade de Seções (Global) -->
+                                <div class="border-t border-sky-500/20 pt-2 mt-1 flex flex-col gap-1.5">
+                                    <span class="text-[9px] uppercase tracking-[0.16em] text-sky-400 font-bold px-1">Exibição de Seções</span>
+                                    
+                                    <!-- Toggle Relatório / Imagem -->
+                                    <button type="button" onclick="toggleSectionVisibility('exibir_relatorio')" id="toggleRelatorioBtn" class="outline-button px-2.5 py-1.5 rounded-lg text-[11px] font-semibold flex items-center justify-between transition-all w-full" title="Ocultar ou exibir a foto de análise climática">
+                                        <span class="flex items-center gap-1.5">
+                                            <i class="fa-solid fa-image text-slate-400 text-[10px]"></i>
+                                            <span>Foto Relatório</span>
+                                        </span>
+                                        <span id="badgeRelatorio" class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Visível</span>
+                                    </button>
+
+                                    <!-- Toggle Métricas da Malha -->
+                                    <button type="button" onclick="toggleSectionVisibility('exibir_metricas')" id="toggleMetricasBtn" class="outline-button px-2.5 py-1.5 rounded-lg text-[11px] font-semibold flex items-center justify-between transition-all w-full" title="Ocultar ou exibir o painel de métricas da malha">
+                                        <span class="flex items-center gap-1.5">
+                                            <i class="fa-solid fa-chart-pie text-slate-400 text-[10px]"></i>
+                                            <span>Métricas</span>
+                                        </span>
+                                        <span id="badgeMetricas" class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Visível</span>
+                                    </button>
+
+                                    <!-- Toggle Mapa & Ocorrências -->
+                                    <button type="button" onclick="toggleSectionVisibility('exibir_mapa')" id="toggleMapaBtn" class="outline-button px-2.5 py-1.5 rounded-lg text-[11px] font-semibold flex items-center justify-between transition-all w-full" title="Ocultar ou exibir o mapa operacional e lista de bloqueios">
+                                        <span class="flex items-center gap-1.5">
+                                            <i class="fa-solid fa-map-location-dot text-slate-400 text-[10px]"></i>
+                                            <span>Mapa &amp; Lista</span>
+                                        </span>
+                                        <span id="badgeMapa" class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Visível</span>
+                                    </button>
+                                </div>
                                 <!-- ADMIN:END -->
 
                                 <!-- Tema do site -->
@@ -2529,6 +2587,67 @@
         // silenciosamente "zero ocorrências" — nunca é isso que aconteceu de
         // verdade, então a tela precisa dizer "sem conexão", não "zerado".
         let lastFetchFailed = false;
+        let sheetLastModifiedTime = null;
+
+        function formatSheetDate(val) {
+            if (!val) return null;
+            if (val instanceof Date) {
+                const d = String(val.getDate()).padStart(2, '0');
+                const m = String(val.getMonth() + 1).padStart(2, '0');
+                const y = val.getFullYear();
+                const h = String(val.getHours()).padStart(2, '0');
+                const min = String(val.getMinutes()).padStart(2, '0');
+                const sec = String(val.getSeconds()).padStart(2, '0');
+                return `${d}/${m}/${y} - ${h}:${min}:${sec}`;
+            }
+            const str = String(val).trim();
+            if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) {
+                return str;
+            }
+            const parsed = new Date(str);
+            if (!isNaN(parsed.getTime())) {
+                const d = String(parsed.getDate()).padStart(2, '0');
+                const m = String(parsed.getMonth() + 1).padStart(2, '0');
+                const y = parsed.getFullYear();
+                const h = String(parsed.getHours()).padStart(2, '0');
+                const min = String(parsed.getMinutes()).padStart(2, '0');
+                const sec = String(parsed.getSeconds()).padStart(2, '0');
+                return `${d}/${m}/${y} - ${h}:${min}:${sec}`;
+            }
+            return str;
+        }
+
+        function extractLatestDateFromOccurrences(items) {
+            if (!Array.isArray(items) || items.length === 0) return null;
+            let latestTs = 0;
+            let latestStr = null;
+
+            for (const item of items) {
+                if (!item || !item.time) continue;
+                const raw = String(item.time).trim();
+                const match = raw.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+                if (match) {
+                    const day = parseInt(match[1], 10);
+                    const month = parseInt(match[2], 10) - 1;
+                    const year = parseInt(match[3], 10);
+                    const hour = match[4] ? parseInt(match[4], 10) : 0;
+                    const min = match[5] ? parseInt(match[5], 10) : 0;
+                    const sec = match[6] ? parseInt(match[6], 10) : 0;
+                    const ts = new Date(year, month, day, hour, min, sec).getTime();
+                    if (!isNaN(ts) && ts > latestTs) {
+                        latestTs = ts;
+                        latestStr = `${String(day).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}/${year} - ${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+                    }
+                    continue;
+                }
+                const parsed = new Date(raw);
+                if (!isNaN(parsed.getTime()) && parsed.getTime() > latestTs) {
+                    latestTs = parsed.getTime();
+                    latestStr = formatSheetDate(parsed);
+                }
+            }
+            return latestStr;
+        }
 
         // ADMIN:START
         // O PIN não pode viver em texto puro no cliente: qualquer visitante leria o código-fonte
@@ -2546,7 +2665,101 @@
                 .map(b => b.toString(16).padStart(2, '0'))
                 .join('');
         }
+
+        function toggleSectionVisibility(key) {
+            checkAdminAction(() => {
+                siteConfig[key] = !siteConfig[key];
+                applySectionVisibility();
+                showToast(`Seção ${siteConfig[key] ? 'ativada' : 'ocultada'} localmente. Salve no config.json do repositório para aplicar a todos.`);
+            });
+        }
         // ADMIN:END
+
+        /** Configuração global de seções (lida de config.json no GitHub) */
+        let siteConfig = {
+            exibir_relatorio: true,
+            exibir_metricas: true,
+            exibir_mapa: true
+        };
+
+        function applySectionVisibility() {
+            // Seção Relatório / Foto de Análise Climática
+            const secRelatorio = document.getElementById('relatorio');
+            const navRelatorio = document.querySelector('a[href="#relatorio"]');
+            if (secRelatorio) {
+                secRelatorio.style.display = siteConfig.exibir_relatorio ? '' : 'none';
+            }
+            if (navRelatorio) {
+                navRelatorio.style.display = siteConfig.exibir_relatorio ? '' : 'none';
+            }
+
+            // Seção Métricas / Status da Malha
+            const secStatus = document.querySelector('.status-panel');
+            if (secStatus) {
+                secStatus.style.display = siteConfig.exibir_metricas ? '' : 'none';
+            }
+
+            // Seção Mapa Operacional & Lista de Ocorrências
+            const secMapa = document.getElementById('mapa-operacional');
+            const navMapa = document.querySelector('a[href="#mapa-operacional"]');
+            const navRegistros = document.querySelector('a[href="#registros"]');
+            const heroBtns = document.querySelectorAll('a[href="#mapa-operacional"], a[href="#registros"]');
+            if (secMapa) {
+                secMapa.style.display = siteConfig.exibir_mapa ? '' : 'none';
+                if (siteConfig.exibir_mapa && typeof map !== 'undefined' && map) {
+                    setTimeout(() => map.invalidateSize(), 200);
+                }
+            }
+            if (navMapa) {
+                navMapa.style.display = siteConfig.exibir_mapa ? '' : 'none';
+            }
+            if (navRegistros) {
+                navRegistros.style.display = siteConfig.exibir_mapa ? '' : 'none';
+            }
+            heroBtns.forEach(btn => {
+                btn.style.display = siteConfig.exibir_mapa ? '' : 'none';
+            });
+
+            updateConfigBadges();
+        }
+
+        function updateConfigBadges() {
+            const badgeRel = document.getElementById('badgeRelatorio');
+            const badgeMet = document.getElementById('badgeMetricas');
+            const badgeMap = document.getElementById('badgeMapa');
+
+            if (badgeRel) {
+                badgeRel.textContent = siteConfig.exibir_relatorio ? 'Visível' : 'Oculto';
+                badgeRel.className = siteConfig.exibir_relatorio 
+                    ? 'px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    : 'px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30';
+            }
+            if (badgeMet) {
+                badgeMet.textContent = siteConfig.exibir_metricas ? 'Visível' : 'Oculto';
+                badgeMet.className = siteConfig.exibir_metricas 
+                    ? 'px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    : 'px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30';
+            }
+            if (badgeMap) {
+                badgeMap.textContent = siteConfig.exibir_mapa ? 'Visível' : 'Oculto';
+                badgeMap.className = siteConfig.exibir_mapa 
+                    ? 'px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    : 'px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30';
+            }
+        }
+
+        async function loadSiteConfig() {
+            try {
+                const res = await fetch('config.json?t=' + Date.now());
+                if (res.ok) {
+                    const cfg = await res.json();
+                    siteConfig = { ...siteConfig, ...cfg };
+                }
+            } catch (e) {
+                // Mantém padrões locais caso haja falha de rede
+            }
+            applySectionVisibility();
+        }
 
         /** Neutraliza HTML vindo da planilha antes de qualquer innerHTML. */
         function escapeHTML(value) {
@@ -2570,6 +2783,7 @@
         }
 
         window.onload = function() {
+            loadSiteConfig();
             updateLiveTimestamp();
             initMap();
             // Sincroniza rótulo do botão e telhas do mapa com o tema já aplicado
@@ -2605,8 +2819,14 @@
                 .then(res => res.json())
                 .then(resData => {
                     if (resData && resData.status === "success" && Array.isArray(resData.data) && resData.data.length > 1) {
+                        if (resData.lastModified || resData.lastUpdated || resData.updatedAt) {
+                            sheetLastModifiedTime = formatSheetDate(resData.lastModified || resData.lastUpdated || resData.updatedAt);
+                        }
                         const parsed = parseGoogleSheetRows(resData.data);
                         if (parsed && parsed.length > 0) {
+                            if (!sheetLastModifiedTime) {
+                                sheetLastModifiedTime = extractLatestDateFromOccurrences(parsed);
+                            }
                             const isFirstLoad = !hasLoaded;
                             occurrences = parsed;
                             hasLoaded = true;
@@ -2631,6 +2851,9 @@
                     const matrix = parseCSVTo2DArray(csvText);
                     const parsedData = parseGoogleSheetRows(matrix);
                     if (parsedData && parsedData.length > 0) {
+                        if (!sheetLastModifiedTime) {
+                            sheetLastModifiedTime = extractLatestDateFromOccurrences(parsedData);
+                        }
                         const isFirstLoad = !hasLoaded;
                         occurrences = parsedData;
                         hasLoaded = true;
@@ -2898,8 +3121,8 @@
         });
 
         function updateLiveTimestamp() {
-            const el = document.getElementById('liveTimestamp');
-            if (!el) return;
+            const elLive = document.getElementById('liveTimestamp');
+            const elSheet = document.getElementById('sheetLastModified');
             const now = new Date();
             const d = String(now.getDate()).padStart(2, '0');
             const m = String(now.getMonth() + 1).padStart(2, '0');
@@ -2907,7 +3130,14 @@
             const h = String(now.getHours()).padStart(2, '0');
             const min = String(now.getMinutes()).padStart(2, '0');
             const sec = String(now.getSeconds()).padStart(2, '0');
-            el.innerText = `${d}/${m}/${y} - ${h}:${min}:${sec}`;
+            const liveFormatted = `${d}/${m}/${y} - ${h}:${min}:${sec}`;
+
+            if (elLive) {
+                elLive.innerText = liveFormatted;
+            }
+            if (elSheet) {
+                elSheet.innerText = sheetLastModifiedTime || liveFormatted;
+            }
         }
 
         let darkTileLayer, lightTileLayer;
