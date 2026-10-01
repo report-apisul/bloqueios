@@ -1,5 +1,5 @@
 {
-  "exibir_relatorio": true,
+  "exibir_relatorio": false,
   "exibir_metricas": true,
   "exibir_mapa": true
 }
