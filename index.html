@@ -728,6 +728,42 @@
         .sync-chip[data-state="ok"]      .sync-chip__dot { background: var(--ok); }
         .sync-chip[data-state="warn"]    { color: var(--warn); border-color: rgba(245,181,68,.26); }
         .sync-chip[data-state="warn"]    .sync-chip__dot { background: var(--warn); }
+        .sync-chip[data-state="pending"] { color: #38bdf8; border-color: rgba(56,189,248,.3); }
+        .sync-chip[data-state="pending"] .sync-chip__dot { background: #38bdf8; animation: pulse 1.5s infinite ease-in-out; }
+
+        /* ---- Badge de sincronização na tela principal (Hero) ------------ */
+        .hero-sync-badge {
+            transition: all 0.3s ease;
+            border-width: 1px;
+            border-style: solid;
+        }
+        .hero-sync-badge[data-state="pending"] {
+            background-color: rgba(14, 116, 144, 0.25);
+            border-color: rgba(56, 189, 248, 0.35);
+            color: #7dd3fc;
+        }
+        .hero-sync-badge[data-state="pending"] #heroSyncDot {
+            background-color: #38bdf8;
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+        .hero-sync-badge[data-state="ok"] {
+            background-color: rgba(6, 78, 59, 0.4);
+            border-color: rgba(16, 185, 129, 0.25);
+            color: #6ee7b7;
+        }
+        .hero-sync-badge[data-state="ok"] #heroSyncDot {
+            background-color: #34d399;
+            animation: pulse 2s infinite ease-in-out;
+        }
+        .hero-sync-badge[data-state="warn"] {
+            background-color: rgba(120, 53, 15, 0.35);
+            border-color: rgba(245, 158, 11, 0.35);
+            color: #fcd34d;
+        }
+        .hero-sync-badge[data-state="warn"] #heroSyncDot {
+            background-color: #fbbf24;
+            animation: pulse 1.5s infinite ease-in-out;
+        }
 
         /* ---- Mapa integrado ao sistema --------------------------------- */
         .map-frame {
@@ -1497,8 +1533,26 @@
         html.light .pill-amber { border-color: rgba(178, 94, 0, .30); }
         html.light .pill-emerald { border-color: rgba(6, 118, 71, .30); }
         html.light .pill-neutral { background: rgba(14, 127, 190, .10); color: var(--apisul-accent-soft); border-color: rgba(14, 127, 190, .28); }
-        html.light .sync-chip[data-state="ok"]   { border-color: rgba(6, 118, 71, .28); }
-        html.light .sync-chip[data-state="warn"] { border-color: rgba(178, 94, 0, .28); }
+        html.light .sync-chip[data-state="ok"]      { border-color: rgba(6, 118, 71, .28); }
+        html.light .sync-chip[data-state="warn"]    { border-color: rgba(178, 94, 0, .28); }
+        html.light .sync-chip[data-state="pending"] { color: #0284c7; border-color: rgba(14, 165, 233, .35); }
+        html.light .sync-chip[data-state="pending"] .sync-chip__dot { background: #0284c7; }
+
+        html.light .hero-sync-badge[data-state="pending"] {
+            background-color: rgba(224, 242, 254, 0.9);
+            border-color: rgba(14, 165, 233, 0.4);
+            color: #0369a1;
+        }
+        html.light .hero-sync-badge[data-state="ok"] {
+            background-color: rgba(236, 253, 245, 0.9);
+            border-color: rgba(16, 185, 129, 0.4);
+            color: #047857;
+        }
+        html.light .hero-sync-badge[data-state="warn"] {
+            background-color: rgba(254, 243, 199, 0.9);
+            border-color: rgba(245, 158, 11, 0.4);
+            color: #b45309;
+        }
 
         /* ---- Mapa (Leaflet) --------------------------------------------- */
         html.light .map-legend { background: rgba(255, 255, 255, .93); }
@@ -1579,7 +1633,7 @@
                     <div class="flex items-center gap-3 ml-auto lg:ml-0">
                         <!-- Data da última atualização (ao lado do menu) -->
                         <div class="flex items-center gap-2 text-[10px] text-slate-300 pr-1">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span id="headerSyncDot" class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse transition-colors"></span>
                             <div class="leading-tight">
                                 <span class="block uppercase tracking-[0.12em] text-slate-500 font-bold">Última atualização</span>
                                 <span id="liveTimestamp" class="font-medium text-slate-200">Carregando...</span>
@@ -1672,9 +1726,9 @@
                             <span class="field-label mt-1">Visibilidade</span>
                         </div>
                     </div>
-                    <div class="mt-5 rounded-lg bg-emerald-950/40 border border-emerald-500/25 px-3 py-2.5 flex items-center gap-2.5 text-[11px] text-emerald-300">
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        Ambiente conectado à base oficial
+                    <div id="heroSyncBadge" class="hero-sync-badge mt-5 rounded-lg px-3 py-2.5 flex items-center gap-2.5 text-[11px]" data-state="pending">
+                        <span id="heroSyncDot" class="w-2 h-2 rounded-full flex-shrink-0"></span>
+                        <span id="heroSyncStatus" class="font-medium">Conectando à base oficial…</span>
                     </div>
                 </aside>
             </div>
@@ -2023,7 +2077,9 @@
         }
 
         function fetchSpreadsheetData() {
-            const statusEl = document.getElementById('sheetSyncStatus');
+            if (!hasLoaded) {
+                setSyncState('pending', 'Conectando à base oficial…', 'Conectando…');
+            }
 
             fetchWithTimeout(APPS_SCRIPT_WEBAPP_URL, 15000)
                 // res.json() lança quando o Google devolve uma página de erro
@@ -2040,7 +2096,7 @@
                             hasLoaded = true;
                             lastFetchFailed = false;
                             renderData({ refit: isFirstLoad });
-                            setSyncState('ok', 'Planilha conectada');
+                            setSyncState('ok', 'Ambiente conectado à base oficial', 'Planilha conectada');
                             updateLiveTimestamp();
                             return;
                         }
@@ -2064,7 +2120,7 @@
                         hasLoaded = true;
                         lastFetchFailed = false;
                         renderData({ refit: isFirstLoad });
-                        setSyncState('ok', 'Planilha conectada');
+                        setSyncState('ok', 'Ambiente conectado à base oficial', 'Planilha conectada');
                         updateLiveTimestamp();
                     } else {
                         handleFetchFailure();
@@ -2084,23 +2140,46 @@
         function handleFetchFailure() {
             lastFetchFailed = true;
             if (hasLoaded) {
-                setSyncState('warn', 'Sem conexão, exibindo últimos dados carregados');
+                setSyncState('warn', 'Sem conexão com a base, exibindo dados em cache', 'Sem conexão, exibindo últimos dados');
             } else {
-                setSyncState('warn', 'Não foi possível conectar, tentando de novo…');
+                setSyncState('warn', 'Não foi possível conectar, tentando de novo…', 'Não foi possível conectar, tentando de novo…');
                 renderData();
                 setTimeout(fetchSpreadsheetData, 15000);
             }
         }
 
         /**
-         * Estado de sincronização com significado visual, não só texto trocado.
-         * Antes o mesmo ponto verde piscava mesmo quando a conexão havia falhado.
+         * Estado de sincronização com significado visual em toda a interface:
+         * - No menu drop-down de Controles (#sheetSyncChip / #sheetSyncStatus)
+         * - Na tela principal no card Hero (#heroSyncBadge / #heroSyncStatus)
+         * - No indicador do topo ao lado do timestamp (#headerSyncDot)
          */
-        function setSyncState(state, message) {
-            const el = document.getElementById('sheetSyncStatus');
-            const wrap = document.getElementById('sheetSyncChip');
-            if (el) el.textContent = message;
-            if (wrap) wrap.dataset.state = state;
+        function setSyncState(state, heroMessage, menuMessage) {
+            const menuEl = document.getElementById('sheetSyncStatus');
+            const menuChip = document.getElementById('sheetSyncChip');
+            const heroBadge = document.getElementById('heroSyncBadge');
+            const heroStatus = document.getElementById('heroSyncStatus');
+            const headerDot = document.getElementById('headerSyncDot');
+
+            const mMsg = menuMessage || heroMessage || '';
+            const hMsg = heroMessage || menuMessage || '';
+
+            if (menuEl) menuEl.textContent = mMsg;
+            if (menuChip) menuChip.dataset.state = state;
+
+            if (heroStatus) heroStatus.textContent = hMsg;
+            if (heroBadge) heroBadge.dataset.state = state;
+
+            if (headerDot) {
+                headerDot.classList.remove('bg-emerald-400', 'bg-amber-400', 'bg-sky-400');
+                if (state === 'ok') {
+                    headerDot.classList.add('bg-emerald-400');
+                } else if (state === 'warn') {
+                    headerDot.classList.add('bg-amber-400');
+                } else {
+                    headerDot.classList.add('bg-sky-400');
+                }
+            }
         }
 
         function parseCSVTo2DArray(csvText) {
