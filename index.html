@@ -765,21 +765,268 @@
             animation: pulse 1.5s infinite ease-in-out;
         }
 
-        /* ---- Mapa integrado ao sistema --------------------------------- */
-        .map-frame {
-            position: relative;
-            inline-size: 100%;
-            block-size: clamp(360px, 52vh, 520px);
-            border-radius: var(--r-md);
+        /* ---- Novo Layout Split: Mapa + Lista Integrados ------------------ */
+        .split-map-container {
+            display: flex;
+            flex-direction: column;
+            border-radius: var(--r-xl);
             overflow: hidden;
             border: 1px solid var(--line-subtle);
+            background: var(--surface-1);
+            box-shadow: var(--elev-2);
+            position: relative;
         }
-        #map { inline-size: 100%; block-size: 100%; background: var(--surface-0); }
+        @media (min-width: 1024px) {
+            .split-map-container {
+                flex-direction: row;
+                height: clamp(680px, 85vh, 880px);
+            }
+        }
 
+        .split-sidebar {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            background: rgba(6, 21, 46, 0.95);
+            border-bottom: 1px solid var(--line-subtle);
+            transition: width 0.35s var(--fluid-ease), margin 0.35s var(--fluid-ease);
+            position: relative;
+            z-index: 20;
+            flex-shrink: 0;
+        }
+        @media (min-width: 1024px) {
+            .split-sidebar {
+                width: 440px;
+                border-bottom: none;
+                border-right: 1px solid var(--line-subtle);
+                height: 100%;
+            }
+            .split-sidebar.is-collapsed {
+                width: 0;
+                margin-left: -440px;
+                overflow: hidden;
+                border-right: none;
+            }
+        }
+
+        .split-sidebar__header {
+            padding: var(--sp-4);
+            border-bottom: 1px solid var(--line-subtle);
+            background: rgba(2, 11, 30, 0.5);
+            flex-shrink: 0;
+        }
+
+        .split-sidebar__list {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--sp-3);
+            display: flex;
+            flex-direction: column;
+            gap: var(--sp-3);
+            max-height: 520px;
+        }
+        @media (min-width: 1024px) {
+            .split-sidebar__list {
+                max-height: none;
+                height: 100%;
+            }
+        }
+
+        .split-sidebar__footer {
+            padding: var(--sp-3) var(--sp-4);
+            border-top: 1px solid var(--line-subtle);
+            background: rgba(2, 11, 30, 0.6);
+            display: flex;
+            gap: var(--sp-2);
+            flex-shrink: 0;
+        }
+
+        .split-sidebar__toggle {
+            display: none;
+            position: absolute;
+            left: 440px;
+            top: 20px;
+            z-index: 500;
+            width: 28px;
+            height: 48px;
+            background: var(--surface-2);
+            border: 1px solid var(--line);
+            border-left: none;
+            border-radius: 0 var(--r-md) var(--r-md) 0;
+            color: var(--text-secondary);
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--elev-2);
+            transition: all 0.35s var(--fluid-ease);
+        }
+        .split-sidebar__toggle:hover {
+            color: var(--text-primary);
+            background: var(--surface-3);
+        }
+        .split-sidebar.is-collapsed + .split-sidebar__toggle {
+            left: 0;
+        }
+        @media (min-width: 1024px) {
+            .split-sidebar__toggle {
+                display: flex;
+            }
+        }
+
+        .split-map-wrapper {
+            flex: 1;
+            position: relative;
+            min-height: 480px;
+            height: 100%;
+            background: var(--surface-0);
+        }
+        #map {
+            width: 100%;
+            height: 100%;
+            min-height: 480px;
+            background: var(--surface-0);
+        }
+
+        /* ---- Mini Stat Cards da Sidebar --------------------------------- */
+        .mini-stat-card {
+            padding: 8px 10px;
+            border-radius: var(--r-md);
+            background: var(--surface-2);
+            border: 1px solid var(--line-subtle);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            user-select: none;
+        }
+        .mini-stat-card:hover {
+            transform: translateY(-1px);
+            border-color: var(--line-strong);
+            background: var(--surface-3);
+        }
+        .mini-stat-card__number {
+            display: block;
+            font-size: 1.15rem;
+            font-weight: 700;
+            line-height: 1.1;
+        }
+        .mini-stat-card__label {
+            display: block;
+            font-size: 0.625rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 2px;
+        }
+
+        /* ---- Card de Ocorrência na Lista -------------------------------- */
+        .occurrence-card {
+            background: var(--surface-2);
+            border: 1px solid var(--line-subtle);
+            border-radius: var(--r-md);
+            padding: 12px 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            border-left-width: 4px;
+        }
+        .occurrence-card:hover {
+            border-color: rgba(56, 189, 248, 0.4);
+            background: var(--surface-3);
+            transform: translateY(-1px);
+            box-shadow: var(--elev-1);
+        }
+        .occurrence-card.is-active {
+            border-color: #38bdf8;
+            background: rgba(14, 116, 144, 0.15);
+            box-shadow: 0 0 0 1px #38bdf8, var(--elev-2);
+        }
+        .occurrence-card[data-status="TOTAL"]    { border-left-color: #FF6B6B; }
+        .occurrence-card[data-status="PARCIAL"]  { border-left-color: #F5B544; }
+        .occurrence-card[data-status="LIBERADO"] { border-left-color: #3DD69C; }
+
+        .occurrence-card__head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .occurrence-card__place {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.25;
+        }
+        .occurrence-card__copy-btn {
+            padding: 3px 8px;
+            border-radius: var(--r-sm);
+            font-size: 0.6875rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            background: var(--surface-1);
+            border: 1px solid var(--line-subtle);
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .occurrence-card__copy-btn:hover {
+            color: var(--text-primary);
+            border-color: var(--line-strong);
+            background: var(--surface-3);
+        }
+        .occurrence-card__copy-btn.copied {
+            color: var(--ok);
+            border-color: rgba(61, 214, 156, 0.4);
+            background: rgba(6, 78, 59, 0.3);
+        }
+
+        .occurrence-card__local {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: 8px;
+            line-height: 1.4;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .occurrence-card__tags {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            margin-top: 6px;
+        }
+        .occurrence-card__tag {
+            font-size: 0.6875rem;
+            padding: 2px 7px;
+            border-radius: var(--r-sm);
+            background: var(--surface-1);
+            color: var(--text-muted);
+            border: 1px solid var(--line-subtle);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .occurrence-card__actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 6px;
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid var(--line-subtle);
+        }
+
+        /* ---- Mapa e Legenda --------------------------------------------- */
         .map-legend {
             position: absolute;
             inset-block-end: var(--sp-4);
-            inset-inline-start: var(--sp-4);
+            inset-inline-end: var(--sp-4);
             z-index: 400;
             display: flex;
             flex-direction: column;
@@ -1554,6 +1801,46 @@
             color: #b45309;
         }
 
+        /* ---- Split View & Cards no Tema Claro -------------------------- */
+        html.light .split-sidebar {
+            background: rgba(248, 250, 252, 0.98);
+        }
+        html.light .split-sidebar__header {
+            background: rgba(234, 242, 250, 0.9);
+        }
+        html.light .split-sidebar__footer {
+            background: rgba(234, 242, 250, 0.9);
+        }
+        html.light .occurrence-card {
+            background: #ffffff;
+            border-color: rgba(203, 213, 225, 0.8);
+        }
+        html.light .occurrence-card:hover {
+            background: #f8fafc;
+            border-color: rgba(14, 165, 233, 0.5);
+        }
+        html.light .occurrence-card.is-active {
+            background: rgba(224, 242, 254, 0.6);
+            border-color: #0284c7;
+        }
+        html.light .occurrence-card__copy-btn {
+            background: #f1f5f9;
+            color: #475569;
+            border-color: rgba(203, 213, 225, 0.8);
+        }
+        html.light .mini-stat-card {
+            background: #ffffff;
+            border-color: rgba(203, 213, 225, 0.8);
+        }
+        html.light .mini-stat-card:hover {
+            background: #f8fafc;
+        }
+        html.light .split-sidebar__toggle {
+            background: #ffffff;
+            border-color: rgba(203, 213, 225, 0.9);
+            color: #334155;
+        }
+
         /* ---- Mapa (Leaflet) --------------------------------------------- */
         html.light .map-legend { background: rgba(255, 255, 255, .93); }
         html.light .map-empty  { background: rgba(234, 240, 246, .86); }
@@ -1773,29 +2060,90 @@
             </div>
         </section>
 
-        <div id="mapa-operacional" class="panel">
+        <!-- Painel Integrado: Mapa Operacional & Lista de Ocorrências (Split View) -->
+        <section id="mapa-operacional" class="split-map-container" aria-label="Monitoramento operacional e registros de rodovias">
+            <span id="registros" style="position: absolute; top: -96px; visibility: hidden;" aria-hidden="true"></span>
             
-            <div class="panel-head panel-head--split">
-                <div>
-                    <h2 class="panel-title">Mapa operacional</h2>
-                    <p class="panel-subtitle">Coordenadas e status das rodovias monitoradas, atualizados de forma contínua.</p>
+            <!-- Sidebar / Painel Esquerdo -->
+            <aside id="mapSidebar" class="split-sidebar" aria-label="Lista de ocorrências e filtros">
+                <!-- Topo da Sidebar: Título e Status Resumo -->
+                <div class="split-sidebar__header">
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <div>
+                            <h2 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
+                                <i class="fa-solid fa-map-location-dot text-sky-400"></i>
+                                <span>Bloqueios em Rodovias</span>
+                            </h2>
+                            <p class="text-[11px] text-slate-400 mt-0.5">Monitoramento integrado e georreferenciado</p>
+                        </div>
+                    </div>
+
+                    <!-- Mini Cards de Contadores Rápidos -->
+                    <div class="grid grid-cols-3 gap-2 mb-3.5">
+                        <div class="mini-stat-card" data-tone="red" onclick="filterMap('TOTAL')" role="button" tabindex="0" title="Filtrar por Bloqueio Total">
+                            <span id="miniStatTotal" class="mini-stat-card__number text-red-400">--</span>
+                            <span class="mini-stat-card__label">Bloqueio total</span>
+                        </div>
+                        <div class="mini-stat-card" data-tone="amber" onclick="filterMap('PARCIAL')" role="button" tabindex="0" title="Filtrar por Bloqueio Parcial">
+                            <span id="miniStatPartial" class="mini-stat-card__number text-amber-400">--</span>
+                            <span class="mini-stat-card__label">Bloqueio parcial</span>
+                        </div>
+                        <div class="mini-stat-card" data-tone="emerald" onclick="filterMap('LIBERADO')" role="button" tabindex="0" title="Filtrar por Via Liberada">
+                            <span id="miniStatCleared" class="mini-stat-card__number text-emerald-400">--</span>
+                            <span class="mini-stat-card__label">Via liberada</span>
+                        </div>
+                    </div>
+
+                    <!-- Campo de Busca -->
+                    <div class="search-field mb-2.5">
+                        <i class="fa-solid fa-magnifying-glass search-field__icon" aria-hidden="true"></i>
+                        <input type="search" id="searchInput" name="registros-busca" oninput="filterTable()" placeholder="Buscar município, rodovia, UF, ID…" class="apisul-input search-field__input w-full text-xs" autocomplete="off" spellcheck="false">
+                    </div>
+
+                    <!-- Barra de Filtros por Pílulas e Contador -->
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="filter-group flex flex-wrap gap-1" role="group" aria-label="Filtrar por status">
+                            <button type="button" onclick="filterMap('ALL')" class="filter-pill is-active text-[11px] py-1 px-2.5" data-status-filter="ALL" aria-pressed="true">Todos</button>
+                            <button type="button" onclick="filterMap('TOTAL')" class="filter-pill text-[11px] py-1 px-2.5" data-status-filter="TOTAL" aria-pressed="false"><span class="dot" data-tone="red"></span>Totais</button>
+                            <button type="button" onclick="filterMap('PARCIAL')" class="filter-pill text-[11px] py-1 px-2.5" data-status-filter="PARCIAL" aria-pressed="false"><span class="dot" data-tone="amber"></span>Parciais</button>
+                            <button type="button" onclick="filterMap('LIBERADO')" class="filter-pill text-[11px] py-1 px-2.5" data-status-filter="LIBERADO" aria-pressed="false"><span class="dot" data-tone="emerald"></span>Liberados</button>
+                        </div>
+                        <span id="visibleCardsCount" class="text-[11px] font-semibold text-slate-400 shrink-0">-- ocorrências</span>
+                    </div>
                 </div>
 
-                <div class="filter-group" role="group" aria-label="Filtrar por status">
-                    <button type="button" onclick="filterMap('ALL')" class="filter-pill is-active" data-status-filter="ALL" aria-pressed="true">Todos</button>
-                    <button type="button" onclick="filterMap('TOTAL')" class="filter-pill" data-status-filter="TOTAL" aria-pressed="false"><span class="dot" data-tone="red"></span>Totais</button>
-                    <button type="button" onclick="filterMap('PARCIAL')" class="filter-pill" data-status-filter="PARCIAL" aria-pressed="false"><span class="dot" data-tone="amber"></span>Parciais</button>
-                    <button type="button" onclick="filterMap('LIBERADO')" class="filter-pill" data-status-filter="LIBERADO" aria-pressed="false"><span class="dot" data-tone="emerald"></span>Liberados</button>
+                <p id="filterSummary" class="filter-summary mx-3 my-2" role="status" hidden></p>
+
+                <!-- Lista de Cards com Scroll Independente -->
+                <div id="occurrenceCardsList" class="split-sidebar__list custom-scrollbar">
+                    <!-- Preenchido dinamicamente via JS -->
                 </div>
-            </div>
 
-            <p id="filterSummary" class="filter-summary" role="status" hidden></p>
+                <!-- Rodapé da Sidebar com Botões de Exportação -->
+                <div class="split-sidebar__footer">
+                    <button type="button" onclick="exportToCSV()" class="outline-button text-xs py-2 px-3 flex-1 flex items-center justify-center gap-1.5" title="Exportar dados em formato CSV">
+                        <i class="fa-solid fa-file-csv text-sky-400"></i>
+                        <span>Exportar CSV</span>
+                    </button>
+                    <button type="button" onclick="window.print()" class="outline-button text-xs py-2 px-3 flex-1 flex items-center justify-center gap-1.5" title="Imprimir ou salvar PDF">
+                        <i class="fa-solid fa-print text-indigo-300"></i>
+                        <span>Baixar PDF</span>
+                    </button>
+                </div>
+            </aside>
 
-            <div class="map-frame">
+            <!-- Botão de Colapsar / Expandir Sidebar -->
+            <button id="sidebarToggleBtn" type="button" onclick="toggleSplitSidebar()" class="split-sidebar__toggle" aria-label="Recolher / Expandir lista de ocorrências" title="Recolher lista">
+                <i id="sidebarToggleIcon" class="fa-solid fa-chevron-left"></i>
+            </button>
+
+            <!-- Área do Mapa (Lado Direito) -->
+            <div class="split-map-wrapper">
                 <div id="map"></div>
 
                 <div id="mapEmptyState" class="map-empty" hidden>
-                    <p class="map-empty__title">Nenhum ponto neste filtro</p>
+                    <i class="fa-solid fa-map-pin text-3xl text-slate-500 mb-2"></i>
+                    <p class="map-empty__title">Nenhum ponto no mapa para este filtro</p>
                     <button type="button" class="map-empty__action" onclick="clearFilters()">Ver todos os pontos</button>
                 </div>
 
@@ -1806,53 +2154,7 @@
                     <span class="map-legend__item"><span class="dot" data-tone="emerald"></span>Via liberada</span>
                 </div>
             </div>
-        </div>
-
-        <div id="registros" class="panel">
-            
-            <div class="panel-head panel-head--split">
-                <div>
-                    <h2 class="panel-title">Registro de ocorrências</h2>
-                    <p class="panel-subtitle">Sincronizado com a planilha oficial do Grupo Apisul.</p>
-                </div>
-
-                <div class="table-controls">
-                    <div class="search-field">
-                        <i class="fa-solid fa-magnifying-glass search-field__icon" aria-hidden="true"></i>
-                        <label class="sr-only" for="searchInput">Buscar registros</label>
-                        <input type="search" id="searchInput" name="registros-busca" oninput="filterTable()" placeholder="Buscar registros…" class="apisul-input search-field__input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-                    </div>
-
-                    <button type="button" onclick="exportToCSV()" class="outline-button">
-                        <i class="fa-solid fa-download" aria-hidden="true"></i>
-                        <span>Exportar CSV</span>
-                    </button>
-                </div>
-            </div>
-
-            <p id="filterSummaryTable" class="filter-summary" role="status" hidden></p>
-
-            <div class="table-scroll custom-scrollbar">
-                <table class="data-table">
-                    <caption class="sr-only">Ocorrências de bloqueio monitoradas, com localização, status e fonte.</caption>
-                    <thead>
-                        <tr>
-                            <th scope="col">Registro</th>
-                            <th scope="col">UF / Cidade</th>
-                            <th scope="col">Local</th>
-                            <th scope="col">Coordenadas</th>
-                            <th scope="col">Status</th>
-                            <th scope="col">Fonte</th>
-                            <th scope="col">Observações</th>
-                            <th scope="col" class="no-print"><span class="sr-only">Ações</span></th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody">
-                        <!-- Preenchido a partir da planilha -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        </section>
 
 
 
@@ -2550,6 +2852,14 @@
                 `;
 
                 marker.bindPopup(popupContent);
+                marker.on('click', () => {
+                    document.querySelectorAll('.occurrence-card').forEach(c => c.classList.remove('is-active'));
+                    const cardEl = document.getElementById(`card-${item.id}`);
+                    if (cardEl) {
+                        cardEl.classList.add('is-active');
+                        cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                });
                 mapMarkers.push({ id: item.id, marker, data: item });
             });
 
@@ -2648,7 +2958,8 @@
             // (sem dado ainda) em vez de fingir que sabemos o valor real.
             if (!hasLoaded && lastFetchFailed) {
                 ['statTotal', 'statTotalBlocked', 'statPartialBlocked', 'statCleared',
-                 'shareTotalBlocked', 'sharePartialBlocked', 'shareCleared'].forEach(id => {
+                 'shareTotalBlocked', 'sharePartialBlocked', 'shareCleared',
+                 'miniStatTotal', 'miniStatPartial', 'miniStatCleared'].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.textContent = '—';
                 });
@@ -2662,6 +2973,14 @@
             animateStatValue(document.getElementById('statTotalBlocked'), counts.TOTAL);
             animateStatValue(document.getElementById('statPartialBlocked'), counts.PARCIAL);
             animateStatValue(document.getElementById('statCleared'), counts.LIBERADO);
+
+            // Mini cards da sidebar do mapa
+            const miniTotal = document.getElementById('miniStatTotal');
+            const miniPartial = document.getElementById('miniStatPartial');
+            const miniCleared = document.getElementById('miniStatCleared');
+            if (miniTotal) miniTotal.textContent = counts.TOTAL;
+            if (miniPartial) miniPartial.textContent = counts.PARCIAL;
+            if (miniCleared) miniCleared.textContent = counts.LIBERADO;
 
             // Cada indicador ganha proporção sobre o total — quatro números soltos não
             // diziam "quanto da operação está comprometida". A proporção é derivada
@@ -2755,101 +3074,154 @@
             }
         }
 
-        function renderTableRows(itemsToRender) {
-            const tbody = document.getElementById('tableBody');
-            if (!tbody) return;
-            tbody.innerHTML = '';
+        function renderOccurrenceCards(itemsToRender) {
+            const container = document.getElementById('occurrenceCardsList');
+            const countEl = document.getElementById('visibleCardsCount');
+            if (countEl) {
+                countEl.textContent = `${itemsToRender.length} ${itemsToRender.length === 1 ? 'ocorrência' : 'ocorrências'}`;
+            }
+            if (!container) return;
+            container.innerHTML = '';
 
             if (itemsToRender.length === 0) {
-                // Três vazios diferentes, três mensagens diferentes. Antes, uma busca
-                // sem resultados mostrava um spinner de "carregando" que nunca terminava.
                 const isFiltered = view.status !== 'ALL' || view.term.trim() !== '';
-                const tr = document.createElement('tr');
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'p-6 text-center text-slate-400 bg-surface-2 rounded-xl border border-line-subtle my-2';
 
                 if (hasLoaded && isFiltered) {
-                    tr.innerHTML = `<td colspan="8">
-                        <div class="table-empty">
-                            <i class="fa-solid fa-filter-circle-xmark table-empty__icon" aria-hidden="true"></i>
-                            <p class="table-empty__title">Nenhum registro corresponde a este filtro</p>
-                            <p class="table-empty__hint">Ajuste os critérios para ver outras ocorrências.</p>
-                            <button type="button" class="table-empty__action" onclick="clearFilters()">Limpar filtros</button>
-                        </div>
-                    </td>`;
+                    emptyDiv.innerHTML = `
+                        <i class="fa-solid fa-filter-circle-xmark text-2xl text-slate-500 mb-2" aria-hidden="true"></i>
+                        <p class="font-semibold text-sm text-slate-200">Nenhum registro com este filtro</p>
+                        <p class="text-xs text-slate-400 mt-1 mb-3">Ajuste os termos ou o status selecionado.</p>
+                        <button type="button" class="outline-button text-xs py-1.5 px-3" onclick="clearFilters()">Limpar filtros</button>
+                    `;
                 } else if (hasLoaded) {
-                    tr.innerHTML = `<td colspan="8">
-                        <div class="table-empty">
-                            <i class="fa-solid fa-circle-check table-empty__icon is-ok" aria-hidden="true"></i>
-                            <p class="table-empty__title">Nenhuma ocorrência registrada</p>
-                            <p class="table-empty__hint">Nenhum bloqueio ativo na base neste momento.</p>
-                        </div>
-                    </td>`;
+                    emptyDiv.innerHTML = `
+                        <i class="fa-solid fa-circle-check text-2xl text-emerald-400 mb-2" aria-hidden="true"></i>
+                        <p class="font-semibold text-sm text-slate-200">Nenhuma ocorrência registrada</p>
+                        <p class="text-xs text-slate-400 mt-1">Nenhum bloqueio ativo na base neste momento.</p>
+                    `;
                 } else if (lastFetchFailed) {
-                    // Falhou antes de carregar pela primeira vez: isto NÃO é
-                    // "zero registros" — é falta de conexão. A busca continua
-                    // tentando sozinha em segundo plano (handleFetchFailure).
-                    tr.innerHTML = `<td colspan="8">
-                        <div class="table-empty">
-                            <i class="fa-solid fa-plug-circle-xmark table-empty__icon" aria-hidden="true"></i>
-                            <p class="table-empty__title">Não foi possível conectar à planilha</p>
-                            <p class="table-empty__hint">Tentando novamente automaticamente…</p>
-                        </div>
-                    </td>`;
+                    emptyDiv.innerHTML = `
+                        <i class="fa-solid fa-plug-circle-xmark text-2xl text-amber-400 mb-2" aria-hidden="true"></i>
+                        <p class="font-semibold text-sm text-slate-200">Não foi possível conectar à base</p>
+                        <p class="text-xs text-slate-400 mt-1">Tentando reconectar automaticamente…</p>
+                    `;
                 } else {
-                    tr.innerHTML = `<td colspan="8">
-                        <div class="table-empty">
-                            <span class="table-empty__spinner" aria-hidden="true"></span>
-                            <p class="table-empty__title">Carregando registros da planilha…</p>
-                        </div>
-                    </td>`;
+                    emptyDiv.innerHTML = `
+                        <div class="w-6 h-6 border-2 border-sky-400 border-t-transparent rounded-full animate-spin mx-auto mb-2" aria-hidden="true"></div>
+                        <p class="font-semibold text-sm text-slate-200">Carregando dados da base…</p>
+                    `;
                 }
-                tbody.appendChild(tr);
+                container.appendChild(emptyDiv);
                 return;
             }
 
             itemsToRender.forEach((item, rowIndex) => {
                 const index = occurrences.findIndex(o => o.id === item.id);
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-navy-800/50 transition-colors table-row-enter";
-                tr.style.animationDelay = `${Math.min(rowIndex * 42, 420)}ms`;
+                const card = document.createElement('div');
+                card.className = "occurrence-card table-row-enter";
+                card.id = `card-${item.id}`;
+                card.dataset.status = item.status || 'LIBERADO';
+                card.style.animationDelay = `${Math.min(rowIndex * 30, 300)}ms`;
+                card.onclick = (e) => {
+                    if (e.target.closest('button') || e.target.closest('a')) return;
+                    highlightCardAndCenterMap(item);
+                };
+
                 const newsHref = safeURL(item.news);
                 const label = `${item.uf} · ${item.cidade}`;
 
-                tr.innerHTML = `
-                    <td class="cell-id" data-label="Registro">
-                        <span class="cell-id__code">${escapeHTML(item.id)}</span>
-                        <span class="cell-id__time">${escapeHTML(item.time)}</span>
-                    </td>
-                    <td class="cell-place" data-label="UF / Cidade">
-                        <span class="cell-place__uf">${escapeHTML(item.uf)}</span>
-                        <span class="cell-place__city">${escapeHTML(item.cidade)}</span>
-                    </td>
-                    <td class="cell-local" data-label="Local">${escapeHTML(item.local)}</td>
-                    <td class="cell-coords" data-label="Coordenadas">${escapeHTML(formatCoord(item.lat))}, ${escapeHTML(formatCoord(item.lng))}</td>
-                    <td class="cell-status" data-label="Status">${getStatusBadge(item.status)}</td>
-                    <td class="cell-source" data-label="Fonte">
-                        ${newsHref
-                            ? `<a href="${newsHref}" target="_blank" rel="noopener noreferrer" class="source-link"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>${escapeHTML(sourceLabel(item))}</a>`
-                            : `<span class="cell-source__empty">Sem fonte</span>`}
-                    </td>
-                    <td class="cell-obs" data-label="Observações">
-                        ${item.observacoes ? escapeHTML(item.observacoes) : `<span class="cell-source__empty">—</span>`}
-                    </td>
-                    <td class="cell-actions no-print" data-label="Ações">
-                        <div class="row-actions">
-                            <button type="button" onclick="centerOnMap(${item.lat}, ${item.lng})" class="row-icon-btn tone-sky" aria-label="Ver ${escapeHTML(label)} no mapa">
-                                <i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i>
-                            </button>
-                        </div>
-                    </td>
+                card.innerHTML = `
+                    <div class="occurrence-card__head">
+                        <div class="occurrence-card__place">${escapeHTML(item.cidade)} · <span class="text-sky-400 font-bold">${escapeHTML(item.uf)}</span></div>
+                        <button type="button" class="occurrence-card__copy-btn" onclick="copyOccurrenceText('${escapeHTML(item.id)}', event)" title="Copiar resumo da ocorrência">
+                            <i class="fa-regular fa-copy" aria-hidden="true"></i>
+                            <span>Copiar</span>
+                        </button>
+                    </div>
+
+                    <div class="occurrence-card__local">
+                        <i class="fa-solid fa-road text-[11px] text-slate-400 shrink-0" aria-hidden="true"></i>
+                        <span class="truncate">${escapeHTML(item.local || 'Local não informado')}</span>
+                    </div>
+
+                    <div class="occurrence-card__tags">
+                        ${getStatusBadge(item.status)}
+                        ${item.time ? `<span class="occurrence-card__tag"><i class="fa-regular fa-clock text-[10px]" aria-hidden="true"></i>${escapeHTML(item.time)}</span>` : ''}
+                        ${newsHref ? `<a href="${newsHref}" target="_blank" rel="noopener noreferrer" class="occurrence-card__tag hover:text-sky-300 transition-colors"><i class="fa-solid fa-arrow-up-right-from-square text-[9px]" aria-hidden="true"></i>${escapeHTML(sourceLabel(item))}</a>` : ''}
+                        <span class="occurrence-card__tag font-mono text-[10px] text-slate-400">${escapeHTML(item.id)}</span>
+                    </div>
+
+                    ${item.observacoes ? `<div class="text-[11px] text-slate-400 mt-2 line-clamp-2 leading-relaxed bg-surface-1/50 rounded p-1.5 border border-line-subtle/50">${escapeHTML(item.observacoes)}</div>` : ''}
+
+                    <div class="occurrence-card__actions">
+                        <button type="button" onclick="centerOnMap(${item.lat}, ${item.lng}); event.stopPropagation();" class="row-icon-btn tone-sky" aria-label="Ver ${escapeHTML(label)} no mapa" title="Centralizar no mapa">
+                            <i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i>
+                        </button>
+                    </div>
                 `;
-                tbody.appendChild(tr);
+                container.appendChild(card);
             });
         }
 
+        function highlightCardAndCenterMap(item) {
+            document.querySelectorAll('.occurrence-card').forEach(c => c.classList.remove('is-active'));
+            const cardEl = document.getElementById(`card-${item.id}`);
+            if (cardEl) {
+                cardEl.classList.add('is-active');
+            }
+            if (typeof item.lat === 'number' && typeof item.lng === 'number' && !isNaN(item.lat) && !isNaN(item.lng)) {
+                centerOnMap(item.lat, item.lng);
+            }
+        }
+
+        function copyOccurrenceText(id, event) {
+            if (event) event.stopPropagation();
+            const item = occurrences.find(o => o.id === id);
+            if (!item) return;
+
+            const statusMeta = STATUS_META[item.status] || STATUS_META.LIBERADO;
+            const textToCopy = `*GRUPO APISUL - OCORRÊNCIA ${item.id}*
+📍 Local: ${item.cidade}/${item.uf} - ${item.local}
+⚠️ Status: ${statusMeta.label.toUpperCase()}
+🕒 Atualização: ${item.time || 'N/D'}
+${item.observacoes ? `📝 Obs: ${item.observacoes}\n` : ''}${item.news ? `🔗 Fonte: ${item.news}` : ''}`.trim();
+
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const btn = event?.currentTarget;
+                if (btn) {
+                    const originalHTML = btn.innerHTML;
+                    btn.classList.add('copied');
+                    btn.innerHTML = '<i class="fa-solid fa-check" aria-hidden="true"></i><span>Copiado!</span>';
+                    setTimeout(() => {
+                        btn.classList.remove('copied');
+                        btn.innerHTML = originalHTML;
+                    }, 2000);
+                }
+            }).catch(() => {
+                console.warn('Falha ao copiar para área de transferência');
+            });
+        }
+
+        function toggleSplitSidebar() {
+            const sidebar = document.getElementById('mapSidebar');
+            const icon = document.getElementById('sidebarToggleIcon');
+            if (!sidebar) return;
+
+            sidebar.classList.toggle('is-collapsed');
+            const isCollapsed = sidebar.classList.contains('is-collapsed');
+
+            if (icon) {
+                icon.className = isCollapsed ? 'fa-solid fa-chevron-right' : 'fa-solid fa-chevron-left';
+            }
+
+            setTimeout(() => {
+                if (map) map.invalidateSize();
+            }, 360);
+        }
+
         // ---- Estado de visualização unificado ----------------------------------
-        // Antes, filterMap e filterTable se anulavam: escolher "Totais" descartava a
-        // busca, e digitar na busca descartava o status. Agora existe um único estado
-        // e uma única função que o aplica, então os dois critérios se compõem.
         const view = { status: 'ALL', term: '' };
 
         function getVisibleOccurrences() {
@@ -2864,7 +3236,7 @@
 
         function applyView({ refit = false } = {}) {
             const visible = getVisibleOccurrences();
-            renderTableRows(visible);
+            renderOccurrenceCards(visible);
             renderMarkers(visible, { refit });
             updateFilterSummary(visible);
 
@@ -2877,17 +3249,15 @@
 
         /** Diz ao usuário o que está filtrado e qual foi o impacto nos dados. */
         function updateFilterSummary(visible) {
-            const targets = ['filterSummary', 'filterSummaryTable']
-                .map(id => document.getElementById(id))
-                .filter(Boolean);
-            if (!targets.length) return;
+            const el = document.getElementById('filterSummary');
+            if (!el) return;
 
             const total = occurrences.length;
             const shown = visible.length;
             const isFiltered = view.status !== 'ALL' || view.term.trim() !== '';
 
             if (!isFiltered) {
-                targets.forEach(el => { el.hidden = true; });
+                el.hidden = true;
                 return;
             }
 
@@ -2900,7 +3270,8 @@
                 <span class="filter-summary__desc">filtrando por ${parts.map(escapeHTML).join(' · ')}</span>
                 <button type="button" class="filter-summary__clear" onclick="clearFilters()">Limpar</button>
             `;
-            targets.forEach(el => { el.hidden = false; el.innerHTML = markup; });
+            el.hidden = false;
+            el.innerHTML = markup;
         }
 
         function clearFilters() {
@@ -2912,7 +3283,6 @@
         }
 
         function filterMap(statusFilter) {
-            // Clicar de novo no filtro ativo volta para "Todos".
             view.status = (view.status === statusFilter && statusFilter !== 'ALL') ? 'ALL' : statusFilter;
             applyView({ refit: true });
         }
