@@ -3155,11 +3155,6 @@
 
                     ${item.observacoes ? `<div class="text-[11px] text-slate-400 mt-2 line-clamp-2 leading-relaxed bg-surface-1/50 rounded p-1.5 border border-line-subtle/50">${escapeHTML(item.observacoes)}</div>` : ''}
 
-                    <div class="occurrence-card__actions">
-                        <button type="button" onclick="centerOnMap(${item.lat}, ${item.lng}); event.stopPropagation();" class="row-icon-btn tone-sky" aria-label="Ver ${escapeHTML(label)} no mapa" title="Centralizar no mapa">
-                            <i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i>
-                        </button>
-                    </div>
                 `;
                 container.appendChild(card);
             });
