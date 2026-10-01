@@ -2091,6 +2091,15 @@
                                         </span>
                                         <span id="badgeMapa" class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Visível</span>
                                     </button>
+
+                                    <!-- Botão para configurar/trocar Token do GitHub -->
+                                    <button type="button" onclick="promptGitHubToken()" class="outline-button px-2.5 py-1.5 rounded-lg text-[10px] font-semibold flex items-center justify-between transition-all w-full mt-1 opacity-85 hover:opacity-100" title="Configurar Token de Acesso do GitHub">
+                                        <span class="flex items-center gap-1.5">
+                                            <i class="fa-solid fa-key text-amber-400 text-[10px]"></i>
+                                            <span>Token GitHub</span>
+                                        </span>
+                                        <span id="githubTokenStatus" class="text-[9px] font-bold text-slate-400">Configurar</span>
+                                    </button>
                                 </div>
                                 <!-- ADMIN:END -->
 
@@ -2681,11 +2690,155 @@
                 .join('');
         }
 
+        const GITHUB_CONFIG_API_URL = 'https://api.github.com/repos/report-apisul/bloqueios/contents/config.json';
+        const GITHUB_TOKEN_STORAGE_KEY = 'apisul_github_token';
+
+        function getGitHubToken() {
+            return localStorage.getItem(GITHUB_TOKEN_STORAGE_KEY) || '';
+        }
+
+        function updateGitHubTokenBadge() {
+            const el = document.getElementById('githubTokenStatus');
+            if (!el) return;
+            const token = getGitHubToken();
+            if (token) {
+                el.textContent = 'Salvo ✓';
+                el.className = 'text-[9px] font-bold text-emerald-400';
+            } else {
+                el.textContent = 'Configurar';
+                el.className = 'text-[9px] font-bold text-amber-400';
+            }
+        }
+
+        function promptGitHubToken() {
+            const currentToken = getGitHubToken();
+            const message = currentToken
+                ? 'Token do GitHub configurado.\n\nCole um novo token abaixo para substituir, ou deixe em branco para remover:'
+                : 'Cole o seu Token de Acesso do GitHub (o mesmo utilizado para enviar imagens):\n\nEle será salvo com segurança no seu navegador para permitir que as alterações de seções sejam salvas na raiz do site para todos os visitantes.';
+            
+            const input = prompt(message, currentToken ? '••••••••••••••••••••' : '');
+            if (input === null) return; // Cancelou
+            
+            const trimmed = input.trim();
+            if (trimmed && !trimmed.startsWith('•••')) {
+                localStorage.setItem(GITHUB_TOKEN_STORAGE_KEY, trimmed);
+                updateGitHubTokenBadge();
+                showAdminNotification('Token do GitHub salvo com sucesso!', 'success');
+            } else if (trimmed === '') {
+                localStorage.removeItem(GITHUB_TOKEN_STORAGE_KEY);
+                updateGitHubTokenBadge();
+                showAdminNotification('Token do GitHub removido.', 'info');
+            }
+        }
+
+        async function saveConfigToGitHub(configObj) {
+            let token = getGitHubToken();
+            if (!token) {
+                token = prompt('Para salvar esta alteração no GitHub para todos os visitantes, cole seu Token do GitHub (o mesmo utilizado para as imagens):');
+                if (!token || !token.trim()) {
+                    showAdminNotification('Alteração visível apenas localmente (sem token configurado).', 'warn');
+                    return false;
+                }
+                token = token.trim();
+                localStorage.setItem(GITHUB_TOKEN_STORAGE_KEY, token);
+                updateGitHubTokenBadge();
+            }
+
+            showAdminNotification('Salvando no GitHub...', 'pending');
+
+            try {
+                // 1. Obter SHA atual do arquivo config.json
+                let sha = null;
+                try {
+                    const getRes = await fetch(GITHUB_CONFIG_API_URL + '?ref=main', {
+                        headers: {
+                            'Authorization': `token ${token}`,
+                            'Accept': 'application/vnd.github+json'
+                        },
+                        cache: 'no-store'
+                    });
+                    if (getRes.ok) {
+                        const getData = await getRes.json();
+                        sha = getData.sha;
+                    }
+                } catch (e) {
+                    console.warn('Erro ao obter SHA anterior do config.json:', e);
+                }
+
+                // 2. Enviar novo conteúdo via PUT
+                const jsonString = JSON.stringify(configObj, null, 2);
+                const base64Content = btoa(unescape(encodeURIComponent(jsonString)));
+
+                const putPayload = {
+                    message: 'Atualizar visibilidade de seções (config.json)',
+                    content: base64Content,
+                    branch: 'main'
+                };
+                if (sha) {
+                    putPayload.sha = sha;
+                }
+
+                const putRes = await fetch(GITHUB_CONFIG_API_URL, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(putPayload)
+                });
+
+                if (!putRes.ok) {
+                    const errorData = await putRes.json().catch(() => ({}));
+                    throw new Error(errorData.message || `HTTP ${putRes.status}`);
+                }
+
+                showAdminNotification('✅ Salvo no GitHub! Visibilidade atualizada para todos os acessos.', 'success');
+                return true;
+            } catch (err) {
+                console.error('Falha ao salvar config.json no GitHub:', err);
+                showAdminNotification(`⚠️ Erro ao salvar no GitHub: ${err.message}`, 'error');
+                return false;
+            }
+        }
+
+        function showAdminNotification(message, type = 'info') {
+            let container = document.getElementById('adminToastContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'adminToastContainer';
+                container.className = 'fixed bottom-5 right-5 z-[9999] flex flex-col gap-2 max-w-sm pointer-events-none';
+                document.body.appendChild(container);
+            }
+
+            const toast = document.createElement('div');
+            const colorClasses = {
+                success: 'bg-emerald-950/95 border-emerald-500/50 text-emerald-200',
+                error: 'bg-rose-950/95 border-rose-500/50 text-rose-200',
+                warn: 'bg-amber-950/95 border-amber-500/50 text-amber-200',
+                pending: 'bg-sky-950/95 border-sky-500/50 text-sky-200',
+                info: 'bg-slate-900/95 border-slate-700 text-slate-200'
+            }[type] || 'bg-slate-900/95 border-slate-700 text-slate-200';
+
+            toast.className = `p-3 rounded-xl border shadow-2xl backdrop-blur-md text-xs font-semibold flex items-center gap-2 pointer-events-auto transition-all duration-300 transform translate-y-2 opacity-0 ${colorClasses}`;
+            toast.innerHTML = `<span>${message}</span>`;
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 400);
+            }, 4500);
+        }
+
         function toggleSectionVisibility(key) {
-            checkAdminAction(() => {
+            checkAdminAction(async () => {
                 siteConfig[key] = !siteConfig[key];
                 applySectionVisibility();
-                showToast(`Seção ${siteConfig[key] ? 'ativada' : 'ocultada'} localmente. Salve no config.json do repositório para aplicar a todos.`);
+                await saveConfigToGitHub(siteConfig);
             });
         }
         // ADMIN:END
@@ -2760,6 +2913,9 @@
                 badgeMap.className = siteConfig.exibir_mapa 
                     ? 'px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                     : 'px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30';
+            }
+            if (typeof updateGitHubTokenBadge === 'function') {
+                updateGitHubTokenBadge();
             }
         }
 
