@@ -47,12 +47,20 @@ function doPost(e) {
   try {
     var body = JSON.parse(e.postData.contents);
 
-    if (body.action !== 'uploadClimateImage') {
-      response = { status: 'error', message: 'Ação desconhecida.' };
-    } else if (!verifyPin_(body.pin)) {
-      response = { status: 'error', message: 'PIN inválido.' };
+    if (body.action === 'uploadClimateImage') {
+      if (!verifyPin_(body.pin)) {
+        response = { status: 'error', message: 'PIN inválido.' };
+      } else {
+        response = uploadImageToGithub_(body.imageBase64);
+      }
+    } else if (body.action === 'updateSiteConfig') {
+      if (!verifyPin_(body.pin)) {
+        response = { status: 'error', message: 'PIN inválido.' };
+      } else {
+        response = updateConfigOnGithub_(body.config);
+      }
     } else {
-      response = uploadImageToGithub_(body.imageBase64);
+      response = { status: 'error', message: 'Ação desconhecida: ' + body.action };
     }
   } catch (err) {
     response = { status: 'error', message: 'Erro interno: ' + err.message };
@@ -130,3 +138,60 @@ function uploadImageToGithub_(imageBase64) {
     message: 'GitHub respondeu ' + code + ': ' + putResp.getContentText()
   };
 }
+
+function updateConfigOnGithub_(configData) {
+  var token = PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN');
+  if (!token) {
+    return { status: 'error', message: 'GITHUB_TOKEN não configurado nas Propriedades do Script.' };
+  }
+  if (!configData) {
+    return { status: 'error', message: 'Nenhuma configuração recebida.' };
+  }
+
+  var configJsonStr = typeof configData === 'string' ? configData : JSON.stringify(configData, null, 2);
+  var base64Content = Utilities.base64Encode(configJsonStr, Utilities.Charset.UTF_8);
+
+  var apiUrl = 'https://api.github.com/repos/' + GITHUB_OWNER + '/' + GITHUB_REPO + '/contents/config.json';
+  var headers = {
+    Authorization: 'token ' + token,
+    'User-Agent': 'apisul-bloqueios-config-updater',
+    Accept: 'application/vnd.github+json'
+  };
+
+  var sha = null;
+  try {
+    var getResp = UrlFetchApp.fetch(apiUrl + '?ref=' + GITHUB_BRANCH, {
+      headers: headers,
+      muteHttpExceptions: true
+    });
+    if (getResp.getResponseCode() === 200) {
+      sha = JSON.parse(getResp.getContentText()).sha;
+    }
+  } catch (err) {
+    // segue sem sha
+  }
+
+  var payload = {
+    message: 'Atualiza visibilidade de seções (config.json) via painel do site',
+    content: base64Content,
+    branch: GITHUB_BRANCH
+  };
+  if (sha) payload.sha = sha;
+
+  var putResp = UrlFetchApp.fetch(apiUrl, {
+    method: 'put',
+    headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  });
+
+  var code = putResp.getResponseCode();
+  if (code === 200 || code === 201) {
+    return { status: 'success' };
+  }
+  return {
+    status: 'error',
+    message: 'GitHub respondeu ' + code + ': ' + putResp.getContentText()
+  };
+}
+
