@@ -2021,6 +2021,7 @@
                                 <div class="flex items-center gap-1.5 whitespace-nowrap text-[9px]">
                                     <span class="header-timestamp-label uppercase tracking-[0.12em] text-slate-500 font-medium">Sincronizado:</span>
                                     <span id="liveTimestamp" class="font-medium text-slate-300">Carregando...</span>
+                                    <span id="headerSyncCountdown" class="text-[8px] text-sky-400 font-mono ml-1 hidden"></span>
                                 </div>
                             </div>
                         </div>
@@ -2041,6 +2042,15 @@
                                     <span class="sync-chip__dot" aria-hidden="true"></span>
                                     <span id="sheetSyncStatus">Conectando…</span>
                                 </div>
+
+                                <!-- Sincronizar dados manualmente com proteção de taxa -->
+                                <button id="manualSyncBtn" type="button" onclick="triggerManualSync()" class="outline-button px-3 py-2 rounded-lg text-[11px] font-semibold flex items-center justify-between transition-all w-full" title="Sincronizar dados com a planilha oficial">
+                                    <span class="flex items-center gap-2">
+                                        <span class="icon-chip sm tone-sky" style="width:22px;height:22px;font-size:.62rem;"><i id="manualSyncIcon" class="fa-solid fa-arrows-rotate"></i></span>
+                                        <span id="manualSyncText" class="text-sky-200 font-bold">Sincronizar Dados</span>
+                                    </span>
+                                    <span id="manualSyncCooldownBadge" class="text-[10px] text-emerald-400 font-mono">Pronto</span>
+                                </button>
 
                                 <!-- ADMIN:START -->
                                 <!-- Somente leitura / administrador -->
@@ -2154,8 +2164,8 @@
                     <p class="text-xs text-slate-400 leading-relaxed mt-4">Consolidação automática de ocorrências, fontes externas e coordenadas operacionais.</p>
                     <div class="hero-metric mt-5 pt-4 grid grid-cols-2 gap-4">
                         <div>
-                            <span class="block text-xl font-semibold text-white">30min</span>
-                            <span class="field-label mt-1">Ciclo de atualização</span>
+                            <span id="heroCountdownVal" class="block text-xl font-semibold text-sky-400 font-mono">30:00</span>
+                            <span class="field-label mt-1">Próxima atualização</span>
                         </div>
                         <div>
                             <span class="block text-xl font-semibold text-white">24/7</span>
@@ -2172,7 +2182,7 @@
 
         <!-- Seção com Análise Climática -->
         <section id="relatorio" class="panel" style="padding: 0; overflow: hidden; scroll-margin-top: 96px;">
-            <img src="assets/imagens/relatorio.jpeg" style="display: block; width: 100%; max-width: 100%;" alt="Análise climática Brasil">
+            <img id="relatorioImage" src="assets/imagens/relatorio.jpeg" style="display: block; width: 100%; max-width: 100%;" alt="Análise climática Brasil">
         </section>
 
         <section class="status-panel" aria-label="Situação da malha monitorada">
@@ -2545,24 +2555,31 @@
         <div class="bg-navy-900 border border-navy-700 rounded-xl w-full max-w-sm overflow-hidden shadow-2xl">
             <div class="bg-navy-950 px-5 py-3.5 border-b border-navy-800 flex items-center justify-between">
                 <h3 id="authModalTitle" class="font-bold text-white text-sm font-heading">Restrição de modificação</h3>
-                <button onclick="closeAuthModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+                <button type="button" onclick="closeAuthModal()" class="text-slate-400 hover:text-white transition-colors" aria-label="Fechar"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-            <div class="p-5 space-y-3.5 text-xs">
+            <form id="authForm" onsubmit="event.preventDefault(); submitAdminAuth();" class="p-5 space-y-3.5 text-xs">
                 <p class="text-slate-300">
                     Para adicionar, editar ou excluir ocorrências na planilha, insira o PIN de Administrador.
                 </p>
                 <div>
-                    <label class="block text-slate-400 font-semibold mb-1">PIN / Senha de Acesso</label>
-                    <input type="password" id="adminPinInput" placeholder="Digite o PIN..." class="w-full apisul-input p-2.5 text-white text-center font-mono text-base">
+                    <label for="adminPinInput" class="block text-slate-400 font-semibold mb-1">PIN / Senha de Acesso</label>
+                    <input type="password" id="adminPinInput" autocomplete="current-password" placeholder="Digite o PIN..." class="w-full apisul-input p-2.5 text-white text-center font-mono text-base" onkeydown="if(event.key==='Enter'){event.preventDefault();submitAdminAuth();}">
                 </div>
-                <div id="authErrorMessage" class="text-red-400 font-semibold text-[11px] hidden text-center">
-                    <i class="fa-solid fa-triangle-exclamation"></i> Senha incorreta. Tente novamente.
+                <div id="authErrorMessage" class="text-rose-400 font-semibold text-[11px] hidden text-center bg-rose-500/10 border border-rose-500/25 p-2 rounded-lg">
+                    <i class="fa-solid fa-triangle-exclamation"></i> <span id="authErrorText">Senha incorreta. Tente novamente.</span>
+                </div>
+                <div id="authLockoutMessage" class="text-amber-300 font-semibold text-[11px] hidden text-center bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-lg flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-lock text-amber-400"></i>
+                    <span id="authLockoutText">Acesso temporariamente bloqueado.</span>
                 </div>
                 <div class="pt-2 flex justify-end gap-2">
-                    <button onclick="closeAuthModal()" class="px-3 py-2 bg-navy-800 text-slate-300 rounded font-semibold">Cancelar</button>
-                    <button onclick="submitAdminAuth()" class="px-4 py-2 bg-amber-500 text-navy-950 font-bold rounded hover:bg-amber-400">Desbloquear</button>
+                    <button type="button" onclick="closeAuthModal()" class="px-3 py-2 bg-navy-800 text-slate-300 rounded font-semibold hover:bg-navy-700 transition-colors">Cancelar</button>
+                    <button type="submit" id="authSubmitBtn" class="px-4 py-2 bg-amber-500 text-navy-950 font-bold rounded hover:bg-amber-400 transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-unlock text-xs"></i>
+                        <span>Desbloquear</span>
+                    </button>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
     <!-- ADMIN:END -->
@@ -2836,7 +2853,7 @@
 
         async function loadSiteConfig() {
             try {
-                const res = await fetch('config.json?t=' + Date.now());
+                const res = await fetch('config.json?t=' + Date.now(), { cache: 'no-store' });
                 if (res.ok) {
                     const cfg = await res.json();
                     siteConfig = { ...siteConfig, ...cfg };
@@ -2845,6 +2862,12 @@
                 // Mantém padrões locais caso haja falha de rede
             }
             applySectionVisibility();
+
+            // Cache-busting da imagem climática para evitar que o navegador mostre a versão antiga
+            const relImg = document.getElementById('relatorioImage');
+            if (relImg) {
+                relImg.src = 'assets/imagens/relatorio.jpeg?v=' + Date.now();
+            }
         }
 
         /** Neutraliza HTML vindo da planilha antes de qualquer innerHTML. */
@@ -2868,40 +2891,185 @@
             }
         }
 
+        // ---- Rate Limiting, Cache e Fluxo do Cronômetro de Atualização ----
+        const MIN_SYNC_INTERVAL_MS = 60 * 1000;       // Limite de segurança: no máximo 1 consulta externa por minuto
+        const AUTO_SYNC_INTERVAL_MS = 30 * 60 * 1000;  // Ciclo automático regular: a cada 30 minutos
+        const STORAGE_KEY_CACHE_DATA = 'apisul_cache_occurrences_v4';
+        const STORAGE_KEY_CACHE_TIME = 'apisul_cache_sheet_time_v4';
+        const STORAGE_KEY_LAST_SYNC_TS = 'apisul_last_sync_timestamp_v4';
+
+        let nextAutoSyncTimestamp = Date.now() + AUTO_SYNC_INTERVAL_MS;
+        let syncCountdownTimer = null;
+        let isSyncInProgress = false;
+
+        function getLastSyncTimestamp() {
+            try {
+                return parseInt(localStorage.getItem(STORAGE_KEY_LAST_SYNC_TS) || '0', 10);
+            } catch {
+                return 0;
+            }
+        }
+
+        function setLastSyncTimestamp(ts) {
+            try {
+                localStorage.setItem(STORAGE_KEY_LAST_SYNC_TS, String(ts));
+            } catch {}
+        }
+
+        function saveToLocalCache(items, sheetTime) {
+            try {
+                localStorage.setItem(STORAGE_KEY_CACHE_DATA, JSON.stringify(items));
+                if (sheetTime) {
+                    localStorage.setItem(STORAGE_KEY_CACHE_TIME, sheetTime);
+                }
+            } catch (e) {
+                console.warn('Falha ao salvar dados no cache local:', e);
+            }
+        }
+
+        function loadFromLocalCache() {
+            try {
+                const cachedRaw = localStorage.getItem(STORAGE_KEY_CACHE_DATA);
+                const cachedTime = localStorage.getItem(STORAGE_KEY_CACHE_TIME);
+                if (cachedRaw) {
+                    const parsed = JSON.parse(cachedRaw);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        occurrences = parsed;
+                        sheetLastModifiedTime = cachedTime || extractLatestDateFromOccurrences(parsed);
+                        hasLoaded = true;
+                        lastFetchFailed = false;
+                        renderData({ refit: true });
+                        setSyncState('ok', 'Ambiente conectado à base oficial (cache recente)', 'Planilha conectada');
+                        updateLiveTimestamp();
+                        return true;
+                    }
+                }
+            } catch (e) {
+                console.warn('Falha ao carregar cache local:', e);
+            }
+            return false;
+        }
+
+        function getRateLimitCooldownSec() {
+            const elapsed = Date.now() - getLastSyncTimestamp();
+            return Math.max(0, Math.ceil((MIN_SYNC_INTERVAL_MS - elapsed) / 1000));
+        }
+
+        function startSyncFlowCountdown() {
+            if (syncCountdownTimer) clearInterval(syncCountdownTimer);
+
+            const tick = () => {
+                const now = Date.now();
+                const remAutoMs = Math.max(0, nextAutoSyncTimestamp - now);
+                const totalAutoSec = Math.ceil(remAutoMs / 1000);
+                const min = Math.floor(totalAutoSec / 60);
+                const sec = totalAutoSec % 60;
+                const formattedAuto = `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+
+                // 1. Atualiza métrica do Hero
+                const heroVal = document.getElementById('heroCountdownVal');
+                if (heroVal) {
+                    heroVal.textContent = formattedAuto;
+                }
+
+                // 2. Atualiza cabeçalho
+                const headerCount = document.getElementById('headerSyncCountdown');
+                if (headerCount) {
+                    headerCount.textContent = `(auto: ${formattedAuto})`;
+                    headerCount.classList.remove('hidden');
+                }
+
+                // 3. Atualiza botão de sincronização no menu de controles
+                const cdSec = getRateLimitCooldownSec();
+                const cdBadge = document.getElementById('manualSyncCooldownBadge');
+                const syncBtn = document.getElementById('manualSyncBtn');
+                if (cdBadge) {
+                    if (cdSec > 0) {
+                        cdBadge.textContent = `${cdSec}s`;
+                        cdBadge.className = 'text-[10px] text-amber-400 font-mono';
+                        if (syncBtn) syncBtn.setAttribute('title', `Aguarde ${cdSec}s para uma nova consulta à API do Google.`);
+                    } else {
+                        cdBadge.textContent = 'Pronto';
+                        cdBadge.className = 'text-[10px] text-emerald-400 font-mono';
+                        if (syncBtn) syncBtn.setAttribute('title', 'Clique para sincronizar com a planilha oficial.');
+                    }
+                }
+
+                // 4. Se o tempo da atualização automática chegou: dispara consulta
+                if (remAutoMs <= 0 && !isSyncInProgress) {
+                    nextAutoSyncTimestamp = Date.now() + AUTO_SYNC_INTERVAL_MS;
+                    fetchSpreadsheetData();
+                }
+            };
+
+            tick();
+            syncCountdownTimer = setInterval(tick, 1000);
+        }
+
+        function triggerManualSync() {
+            const cdSec = getRateLimitCooldownSec();
+            if (cdSec > 0) {
+                showToast(`⏳ Base atualizada recentemente. Aguarde a atualização automática e o fluxo do cronômetro (liberado em ${cdSec}s) para evitar sobrecarga na API do Google.`, 'warn');
+                return;
+            }
+
+            fetchSpreadsheetData({ userTriggered: true, force: true });
+        }
+
         window.onload = function() {
             loadSiteConfig();
             updateLiveTimestamp();
             initMap();
-            // Sincroniza rótulo do botão e telhas do mapa com o tema já aplicado
-            // pelo script do <head> (salvo em localStorage ou preferência do SO).
             applySiteTheme(currentSiteTheme(), { persist: false });
-            renderData();
-            fetchSpreadsheetData();
-            
-            // Atualização automática a partir da planilha a cada 30 minutos.
-            pollInterval = setInterval(fetchSpreadsheetData, 30 * 60000);
+
+            // Carrega instantaneamente dados do cache caso existam
+            const hasCache = loadFromLocalCache();
+            if (!hasCache) {
+                renderData();
+            }
+
+            // Respeita limite de 1 minuto por IP/cliente se recarregou a página
+            const cdSec = getRateLimitCooldownSec();
+            if (hasCache && cdSec > 0) {
+                console.log(`[Rate Limit] Protegendo API do Google: dados recentes em cache. Próxima consulta em ${cdSec}s.`);
+            } else {
+                fetchSpreadsheetData();
+            }
+
+            // Inicia o fluxo contínuo do cronômetro
+            startSyncFlowCountdown();
         };
 
-        /** fetch() não tem timeout embutido: uma conexão que trava (nem responde
-         *  nem erra) prende a página em "Conectando..." para sempre. Isso já
-         *  causou o próprio problema que handleFetchFailure existe para
-         *  evitar — sem isto, o erro nunca chega a acontecer, só trava. */
+        /** fetch() não tem timeout embutido: uma conexão que trava prende a página em "Conectando...". */
         function fetchWithTimeout(url, timeoutMs) {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
             return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timeoutId));
         }
 
-        function fetchSpreadsheetData() {
+        function fetchSpreadsheetData(options = {}) {
+            const cdSec = getRateLimitCooldownSec();
+            if (!options.force && cdSec > 0 && hasLoaded) {
+                console.log(`[Rate Limit] Consulta evitada para proteger cota da API (${cdSec}s restantes).`);
+                return;
+            }
+
+            if (isSyncInProgress) return;
+            isSyncInProgress = true;
+
+            const syncIcon = document.getElementById('manualSyncIcon');
+            if (syncIcon) syncIcon.classList.add('fa-spin');
+
             if (!hasLoaded) {
                 setSyncState('pending', 'Conectando à base oficial…', 'Conectando…');
             }
 
+            const finalizeSync = () => {
+                isSyncInProgress = false;
+                if (syncIcon) syncIcon.classList.remove('fa-spin');
+            };
+
             fetchWithTimeout(APPS_SCRIPT_WEBAPP_URL, 15000)
-                // res.json() lança quando o Google devolve uma página de erro
-                // HTML em vez do JSON esperado (instabilidade intermitente do
-                // Apps Script) — isso cai no .catch() abaixo como qualquer
-                // outra falha, corretamente.
                 .then(res => res.json())
                 .then(resData => {
                     if (resData && resData.status === "success" && Array.isArray(resData.data) && resData.data.length > 1) {
@@ -2917,20 +3085,31 @@
                             occurrences = parsed;
                             hasLoaded = true;
                             lastFetchFailed = false;
+
+                            // Registra sucesso no cache e timestamp de rate limit
+                            saveToLocalCache(parsed, sheetLastModifiedTime);
+                            setLastSyncTimestamp(Date.now());
+                            nextAutoSyncTimestamp = Date.now() + AUTO_SYNC_INTERVAL_MS;
+
                             renderData({ refit: isFirstLoad });
                             setSyncState('ok', 'Ambiente conectado à base oficial', 'Planilha conectada');
                             updateLiveTimestamp();
+
+                            if (options.userTriggered) {
+                                showToast('Base de dados sincronizada com sucesso!', 'success');
+                            }
+                            finalizeSync();
                             return;
                         }
                     }
-                    fetchCSVFallback();
+                    fetchCSVFallback(options, finalizeSync);
                 })
                 .catch(() => {
-                    fetchCSVFallback();
+                    fetchCSVFallback(options, finalizeSync);
                 });
         }
 
-        function fetchCSVFallback() {
+        function fetchCSVFallback(options = {}, finalizeSync = () => {}) {
             fetchWithTimeout(SPREADSHEET_CSV_URL, 15000)
                 .then(res => res.text())
                 .then(csvText => {
@@ -2944,26 +3123,36 @@
                         occurrences = parsedData;
                         hasLoaded = true;
                         lastFetchFailed = false;
+
+                        saveToLocalCache(parsedData, sheetLastModifiedTime);
+                        setLastSyncTimestamp(Date.now());
+                        nextAutoSyncTimestamp = Date.now() + AUTO_SYNC_INTERVAL_MS;
+
                         renderData({ refit: isFirstLoad });
                         setSyncState('ok', 'Ambiente conectado à base oficial', 'Planilha conectada');
                         updateLiveTimestamp();
+
+                        if (options.userTriggered) {
+                            showToast('Base de dados sincronizada com sucesso!', 'success');
+                        }
+                        finalizeSync();
                     } else {
-                        handleFetchFailure();
+                        handleFetchFailure(options, finalizeSync);
                     }
                 })
                 .catch(() => {
-                    handleFetchFailure();
+                    handleFetchFailure(options, finalizeSync);
                 });
         }
 
-        /** As duas fontes (Apps Script e CSV direto) falharam nesta rodada.
-         *  Nunca trata isso como "zero registros": se já havia dados
-         *  carregados antes, mantém-nos na tela e só avisa que a atualização
-         *  falhou; se é a primeira carga, mantém o estado de carregamento
-         *  (não marca hasLoaded) e tenta de novo em breve, mais rápido que o
-         *  ciclo normal de atualização. */
-        function handleFetchFailure() {
+        function handleFetchFailure(options = {}, finalizeSync = () => {}) {
             lastFetchFailed = true;
+            finalizeSync();
+
+            if (options.userTriggered) {
+                showToast('Falha temporária ao sincronizar com a base.', 'error');
+            }
+
             if (hasLoaded) {
                 setSyncState('warn', 'Sem conexão com a base, exibindo dados em cache', 'Sem conexão, exibindo últimos dados');
             } else {
@@ -3722,9 +3911,22 @@
 
             const toast = document.createElement('div');
             toast.className = 'toast-notification';
-            const icon = type === 'success' 
-                ? '<i class="fa-solid fa-circle-check toast-notification__icon" aria-hidden="true"></i>' 
-                : '<i class="fa-solid fa-circle-exclamation toast-notification__icon" aria-hidden="true"></i>';
+            
+            let icon = '<i class="fa-solid fa-circle-check toast-notification__icon" aria-hidden="true"></i>';
+            let duration = 3200;
+
+            if (type === 'warn') {
+                icon = '<i class="fa-solid fa-clock toast-notification__icon" style="color:#f59e0b;" aria-hidden="true"></i>';
+                toast.style.borderColor = 'rgba(245, 158, 11, 0.45)';
+                toast.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(245, 158, 11, 0.25)';
+                duration = 4500;
+            } else if (type === 'error') {
+                icon = '<i class="fa-solid fa-circle-exclamation toast-notification__icon" style="color:#f43f5e;" aria-hidden="true"></i>';
+                toast.style.borderColor = 'rgba(244, 63, 94, 0.45)';
+                toast.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(244, 63, 94, 0.25)';
+                duration = 4500;
+            }
+
             toast.innerHTML = `${icon}<span>${escapeHTML(message)}</span>`;
             container.appendChild(toast);
 
@@ -3739,7 +3941,7 @@
                 setTimeout(() => {
                     toast.remove();
                 }, 300);
-            }, 2800);
+            }, duration);
         }
 
         function copyOccurrenceText(id, event) {
@@ -3980,25 +4182,169 @@ ${item.observacoes ? `📝 Obs: ${item.observacoes}\n` : ''}${item.news ? `🔗 
             });
         });
 
+        // ---- Proteção contra ataques de força bruta no PIN de Admin ----
+        const MAX_AUTH_ATTEMPTS = 3;
+        const AUTH_LOCKOUT_MS = 3 * 60 * 1000; // 3 minutos de bloqueio
+        const STORAGE_KEY_AUTH_ATTEMPTS = 'apisul_admin_pin_attempts_v1';
+        const STORAGE_KEY_AUTH_LOCKOUT = 'apisul_admin_pin_lockout_until_v1';
+        let authLockoutCountdownTimer = null;
+
+        function getAuthLockoutRemainingMs() {
+            try {
+                const lockedUntil = parseInt(localStorage.getItem(STORAGE_KEY_AUTH_LOCKOUT) || '0', 10);
+                const remaining = lockedUntil - Date.now();
+                if (remaining > 0) return remaining;
+                if (lockedUntil > 0) {
+                    localStorage.removeItem(STORAGE_KEY_AUTH_LOCKOUT);
+                    localStorage.removeItem(STORAGE_KEY_AUTH_ATTEMPTS);
+                }
+                return 0;
+            } catch {
+                return 0;
+            }
+        }
+
+        function getAuthFailedAttemptsCount() {
+            try {
+                return parseInt(localStorage.getItem(STORAGE_KEY_AUTH_ATTEMPTS) || '0', 10);
+            } catch {
+                return 0;
+            }
+        }
+
+        function recordAuthFailedAttempt() {
+            try {
+                const current = getAuthFailedAttemptsCount() + 1;
+                localStorage.setItem(STORAGE_KEY_AUTH_ATTEMPTS, String(current));
+                if (current >= MAX_AUTH_ATTEMPTS) {
+                    const lockedUntil = Date.now() + AUTH_LOCKOUT_MS;
+                    localStorage.setItem(STORAGE_KEY_AUTH_LOCKOUT, String(lockedUntil));
+                }
+                return current;
+            } catch {
+                return 1;
+            }
+        }
+
+        function resetAuthSecurityState() {
+            try {
+                localStorage.removeItem(STORAGE_KEY_AUTH_ATTEMPTS);
+                localStorage.removeItem(STORAGE_KEY_AUTH_LOCKOUT);
+            } catch {}
+            if (authLockoutCountdownTimer) {
+                clearInterval(authLockoutCountdownTimer);
+                authLockoutCountdownTimer = null;
+            }
+        }
+
+        function updateAuthModalUIState() {
+            const input = document.getElementById('adminPinInput');
+            const submitBtn = document.getElementById('authSubmitBtn');
+            const errorBox = document.getElementById('authErrorMessage');
+            const errorText = document.getElementById('authErrorText');
+            const lockoutBox = document.getElementById('authLockoutMessage');
+            const lockoutText = document.getElementById('authLockoutText');
+
+            if (authLockoutCountdownTimer) {
+                clearInterval(authLockoutCountdownTimer);
+                authLockoutCountdownTimer = null;
+            }
+
+            const remainingMs = getAuthLockoutRemainingMs();
+            if (remainingMs > 0) {
+                if (input) {
+                    input.disabled = true;
+                    input.value = '';
+                    input.placeholder = 'Acesso bloqueado temporariamente';
+                }
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                }
+                if (errorBox) errorBox.classList.add('hidden');
+                if (lockoutBox) {
+                    lockoutBox.classList.remove('hidden');
+                    const renderTimer = () => {
+                        const rem = getAuthLockoutRemainingMs();
+                        if (rem <= 0) {
+                            if (authLockoutCountdownTimer) {
+                                clearInterval(authLockoutCountdownTimer);
+                                authLockoutCountdownTimer = null;
+                            }
+                            resetAuthSecurityState();
+                            updateAuthModalUIState();
+                            return;
+                        }
+                        const totalSec = Math.ceil(rem / 1000);
+                        const min = Math.floor(totalSec / 60);
+                        const sec = totalSec % 60;
+                        const formatted = `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+                        if (lockoutText) {
+                            lockoutText.innerHTML = `Muitas tentativas incorretas. Bloqueado por <strong>${formatted}</strong>.`;
+                        }
+                    };
+                    renderTimer();
+                    authLockoutCountdownTimer = setInterval(renderTimer, 1000);
+                }
+                return;
+            }
+
+            // Não bloqueado
+            if (input) {
+                input.disabled = false;
+                input.placeholder = 'Digite o PIN...';
+            }
+            if (submitBtn) {
+                submitBtn.disabled = false;
+            }
+            if (lockoutBox) lockoutBox.classList.add('hidden');
+
+            const attempts = getAuthFailedAttemptsCount();
+            if (attempts > 0 && attempts < MAX_AUTH_ATTEMPTS) {
+                if (errorBox && errorText) {
+                    const remaining = MAX_AUTH_ATTEMPTS - attempts;
+                    errorText.textContent = `Senha incorreta. Tentativa ${attempts} de ${MAX_AUTH_ATTEMPTS} (resta ${remaining}).`;
+                    errorBox.classList.remove('hidden');
+                }
+            } else {
+                if (errorBox) errorBox.classList.add('hidden');
+            }
+        }
+
         function openAuthModal() {
             const input = document.getElementById('adminPinInput');
             if (input) {
                 input.value = '';
                 input.removeAttribute('aria-invalid');
             }
-            document.getElementById('authErrorMessage')?.classList.add('hidden');
+            updateAuthModalUIState();
             openModal('authModal', 'adminPinInput');
+            if (getAuthLockoutRemainingMs() <= 0 && input) {
+                setTimeout(() => input.focus(), 100);
+            }
         }
 
         function closeAuthModal() {
+            if (authLockoutCountdownTimer) {
+                clearInterval(authLockoutCountdownTimer);
+                authLockoutCountdownTimer = null;
+            }
             closeModal('authModal');
             pendingAdminAction = null;
         }
 
         async function submitAdminAuth() {
+            const remainingMs = getAuthLockoutRemainingMs();
+            if (remainingMs > 0) {
+                updateAuthModalUIState();
+                return;
+            }
+
             const input = document.getElementById('adminPinInput');
-            const errorEl = document.getElementById('authErrorMessage');
-            const pin = input?.value || '';
+            const pin = (input?.value || '').trim();
+            if (!pin) {
+                input?.focus();
+                return;
+            }
 
             let matches = false;
             try {
@@ -4008,8 +4354,9 @@ ${item.observacoes ? `📝 Obs: ${item.observacoes}\n` : ''}${item.news ? `🔗 
             }
 
             if (!matches) {
-                errorEl?.classList.remove('hidden');
-                if (input) {
+                recordAuthFailedAttempt();
+                updateAuthModalUIState();
+                if (input && getAuthLockoutRemainingMs() <= 0) {
                     input.value = '';
                     input.setAttribute('aria-invalid', 'true');
                     input.focus();
@@ -4017,11 +4364,14 @@ ${item.observacoes ? `📝 Obs: ${item.observacoes}\n` : ''}${item.news ? `🔗 
                 return;
             }
 
+            // Senha correta: limpa bloqueios e tentativas
+            resetAuthSecurityState();
             isAdmin = true;
             adminPinPlain = pin;
             input?.removeAttribute('aria-invalid');
             updateAdminUI();
             closeAuthModal();
+            showAdminNotification('✅ Modo Edição ativado com sucesso!', 'success');
             if (pendingAdminAction) {
                 const action = pendingAdminAction;
                 pendingAdminAction = null;
@@ -4118,8 +4468,20 @@ ${item.observacoes ? `📝 Obs: ${item.observacoes}\n` : ''}${item.news ? `🔗 
                     : true; // não deu pra ler o sha atual: segue sem bloquear
 
                 if (confirmed) {
-                    setClimateUploadStatus('Imagem enviada! O site atualiza em ~1 min.', false);
-                    setTimeout(() => setClimateUploadStatus('Atualizar Imagem', false), 6000);
+                    // Atualiza a imagem imediatamente na tela do usuário
+                    const relImg = document.getElementById('relatorioImage');
+                    if (relImg) {
+                        relImg.src = dataUrl;
+                    }
+                    // Se o relatório estava oculto, torna visível automaticamente e salva
+                    if (!siteConfig.exibir_relatorio) {
+                        siteConfig.exibir_relatorio = true;
+                        applySectionVisibility();
+                        saveConfigToGitHub(siteConfig);
+                    }
+                    setClimateUploadStatus('Imagem atualizada com sucesso!', false);
+                    showAdminNotification('✅ Imagem atualizada e visibilidade ativada!', 'success');
+                    setTimeout(() => setClimateUploadStatus('Atualizar Imagem', false), 5000);
                 } else {
                     setClimateUploadStatus('Atualizar Imagem', false);
                     alert(
